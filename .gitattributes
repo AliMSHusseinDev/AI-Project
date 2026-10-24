@@ -1,0 +1,8 @@
+* text=auto
+*.pdf binary
+*.docx binary
+*.png binary
+*.csv text eol=lf
+*.json text eol=lf
+*.svg text eol=lf
+*.md text whitespace=-blank-at-eol
