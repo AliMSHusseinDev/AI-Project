@@ -1,0 +1,118 @@
+{
+  "algorithm": "random",
+  "seed": 44,
+  "terrain": {
+    "name": "two_walls",
+    "width": 24,
+    "height": 18,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": [
+      [
+        7,
+        2,
+        9,
+        11
+      ],
+      [
+        15,
+        7,
+        17,
+        16
+      ]
+    ]
+  },
+  "settings": {},
+  "coordinates": [
+    [
+      6,
+      0
+    ],
+    [
+      8,
+      1
+    ],
+    [
+      20,
+      1
+    ],
+    [
+      14,
+      2
+    ],
+    [
+      15,
+      2
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      18,
+      6
+    ],
+    [
+      10,
+      9
+    ],
+    [
+      20,
+      11
+    ],
+    [
+      22,
+      11
+    ],
+    [
+      10,
+      14
+    ],
+    [
+      11,
+      15
+    ],
+    [
+      6,
+      17
+    ],
+    [
+      18,
+      17
+    ]
+  ],
+  "location_ids": [
+    6,
+    32,
+    44,
+    59,
+    60,
+    93,
+    147,
+    196,
+    239,
+    241,
+    295,
+    317,
+    354,
+    366
+  ],
+  "metrics": {
+    "sensors": 14,
+    "covered": 325,
+    "total": 372,
+    "coverage": 0.8736559139784946,
+    "connected": 10,
+    "connectivity": 0.7142857142857143,
+    "components": 2,
+    "feasible": false
+  },
+  "history": [],
+  "evaluations": 1,
+  "runtime_seconds": 0.0002075130000775971,
+  "suite": "main"
+}

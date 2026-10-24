@@ -1,0 +1,28 @@
+{
+  "python": "3.12.14",
+  "numpy": "2.3.5",
+  "matplotlib": "3.10.8",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "seeds": [
+    11,
+    22,
+    33,
+    44,
+    55
+  ],
+  "settings": {
+    "output": "results/reference",
+    "seeds": [
+      11,
+      22,
+      33,
+      44,
+      55
+    ],
+    "generations": 70,
+    "population": 36,
+    "budget": 3000
+  },
+  "total_seconds": 15.74256110500005,
+  "note": "All exported layouts were checked using the independent scalar verifier."
+}

@@ -1,0 +1,80 @@
+{
+  "algorithm": "random",
+  "seed": 55,
+  "terrain": {
+    "name": "open_field",
+    "width": 20,
+    "height": 16,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": []
+  },
+  "settings": {},
+  "coordinates": [
+    [
+      9,
+      3
+    ],
+    [
+      10,
+      3
+    ],
+    [
+      13,
+      3
+    ],
+    [
+      8,
+      9
+    ],
+    [
+      8,
+      11
+    ],
+    [
+      8,
+      12
+    ],
+    [
+      0,
+      13
+    ],
+    [
+      14,
+      13
+    ],
+    [
+      0,
+      15
+    ]
+  ],
+  "location_ids": [
+    69,
+    70,
+    73,
+    188,
+    228,
+    248,
+    260,
+    274,
+    300
+  ],
+  "metrics": {
+    "sensors": 9,
+    "covered": 238,
+    "total": 320,
+    "coverage": 0.74375,
+    "connected": 0,
+    "connectivity": 0.0,
+    "components": 3,
+    "feasible": false
+  },
+  "history": [],
+  "evaluations": 1,
+  "runtime_seconds": 0.00017213000000992906,
+  "suite": "main"
+}

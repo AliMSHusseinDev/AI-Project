@@ -1,0 +1,80 @@
+{
+  "algorithm": "greedy",
+  "seed": 55,
+  "terrain": {
+    "name": "open_field",
+    "width": 20,
+    "height": 16,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": []
+  },
+  "settings": {},
+  "coordinates": [
+    [
+      7,
+      3
+    ],
+    [
+      17,
+      3
+    ],
+    [
+      2,
+      4
+    ],
+    [
+      13,
+      4
+    ],
+    [
+      2,
+      11
+    ],
+    [
+      7,
+      11
+    ],
+    [
+      11,
+      11
+    ],
+    [
+      16,
+      11
+    ],
+    [
+      17,
+      11
+    ]
+  ],
+  "location_ids": [
+    67,
+    77,
+    82,
+    93,
+    222,
+    227,
+    231,
+    236,
+    237
+  ],
+  "metrics": {
+    "sensors": 9,
+    "covered": 320,
+    "total": 320,
+    "coverage": 1.0,
+    "connected": 9,
+    "connectivity": 1.0,
+    "components": 1,
+    "feasible": true
+  },
+  "history": [],
+  "evaluations": 20,
+  "runtime_seconds": 0.002325829999904272,
+  "suite": "main"
+}

@@ -1,0 +1,43 @@
+test_best_fitness_never_decreases (test_algorithms.AlgorithmTests.test_best_fitness_never_decreases) ... ok
+test_budget_is_respected (test_algorithms.AlgorithmTests.test_budget_is_respected) ... ok
+test_exact_tiny_optimum_matches_search (test_algorithms.AlgorithmTests.test_exact_tiny_optimum_matches_search) ... ok
+test_ga_and_ma_return_independently_valid_results (test_algorithms.AlgorithmTests.test_ga_and_ma_return_independently_valid_results) ... ok
+test_genetic_operators_keep_valid_unique_locations (test_algorithms.AlgorithmTests.test_genetic_operators_keep_valid_unique_locations) ... ok
+test_greedy_returns_feasible_layout (test_algorithms.AlgorithmTests.test_greedy_returns_feasible_layout) ... ok
+test_impossible_connected_coverage_is_reported (test_algorithms.AlgorithmTests.test_impossible_connected_coverage_is_reported) ... ok
+test_local_search_removes_a_redundant_sensor (test_algorithms.AlgorithmTests.test_local_search_removes_a_redundant_sensor) ... ok
+test_local_search_repairs_a_coverage_hole (test_algorithms.AlgorithmTests.test_local_search_repairs_a_coverage_hole) ... ok
+test_local_search_repairs_an_isolated_sensor (test_algorithms.AlgorithmTests.test_local_search_repairs_an_isolated_sensor) ... ok
+test_same_seed_reproduces_coordinates_and_history (test_algorithms.AlgorithmTests.test_same_seed_reproduces_coordinates_and_history) ... ok
+test_settings_reject_bad_rates_and_sizes (test_algorithms.AlgorithmTests.test_settings_reject_bad_rates_and_sizes) ... ok
+test_too_small_sensor_limit_is_rejected (test_algorithms.AlgorithmTests.test_too_small_sensor_limit_is_rejected) ... ok
+test_unreachable_candidate_is_ok_if_reachable_nodes_cover_it (test_algorithms.AlgorithmTests.test_unreachable_candidate_is_ok_if_reachable_nodes_cover_it) ... ok
+test_zero_local_search_is_identical_to_ga (test_algorithms.AlgorithmTests.test_zero_local_search_is_identical_to_ga) ... ok
+test_clear_segment (test_model.GeometryTests.test_clear_segment) ... ok
+test_corner_touch_blocks (test_model.GeometryTests.test_corner_touch_blocks) ... ok
+test_crossing_segment (test_model.GeometryTests.test_crossing_segment) ... ok
+test_edge_touch_blocks (test_model.GeometryTests.test_edge_touch_blocks) ... ok
+test_inside_endpoint_blocks (test_model.GeometryTests.test_inside_endpoint_blocks) ... ok
+test_parallel_outside_does_not_block (test_model.GeometryTests.test_parallel_outside_does_not_block) ... ok
+test_vector_geometry_matches_scalar_for_all_pairs (test_model.GeometryTests.test_vector_geometry_matches_scalar_for_all_pairs) ... ok
+test_zero_length_free_segment (test_model.GeometryTests.test_zero_length_free_segment) ... ok
+test_connected_to_sensor_but_not_base (test_model.NetworkTests.test_connected_to_sensor_but_not_base) ... ok
+test_duplicate_sensor_rejected (test_model.NetworkTests.test_duplicate_sensor_rejected) ... ok
+test_empty_layout_does_not_cover (test_model.NetworkTests.test_empty_layout_does_not_cover) ... ok
+test_feasible_always_beats_infeasible (test_model.NetworkTests.test_feasible_always_beats_infeasible) ... ok
+test_independent_verifier_detects_tampering (test_model.NetworkTests.test_independent_verifier_detects_tampering) ... ok
+test_invalid_id_rejected (test_model.NetworkTests.test_invalid_id_rejected) ... ok
+test_invalid_terrain_rejected (test_model.NetworkTests.test_invalid_terrain_rejected) ... ok
+test_obstacle_blocks_communication_and_sensing (test_model.NetworkTests.test_obstacle_blocks_communication_and_sensing) ... ok
+test_range_boundary_included (test_model.NetworkTests.test_range_boundary_included) ... ok
+test_relay_path_to_base (test_model.NetworkTests.test_relay_path_to_base) ... ok
+test_bad_requests_are_rejected (test_web.WebTests.test_bad_requests_are_rejected) ... ok
+test_busy_server_returns_clear_error (test_web.WebTests.test_busy_server_returns_clear_error) ... ok
+test_functional_solve (test_web.WebTests.test_functional_solve) ... ok
+test_home_page_and_health (test_web.WebTests.test_home_page_and_health) ... ok
+test_unknown_page_is_not_exposed (test_web.WebTests.test_unknown_page_is_not_exposed) ... ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 0.744s
+
+OK

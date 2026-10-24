@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sensor Placement Lab</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:#172f40;font:16px/1.5 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:32px 24px}h1{font-size:36px;line-height:1.15;margin:8px 0}h2{font-size:20px;margin-top:0}.tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#19746b}.intro{max-width:760px;color:#4b6475}.layout{display:grid;grid-template-columns:260px 1fr;gap:24px;margin-top:28px}.panel{background:white;border:1px solid #dbe4e9;border-radius:14px;padding:22px;box-shadow:0 3px 12px #142f4005}label{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}select,input,button{width:100%;font:inherit;padding:10px;border:1px solid #c4d2dc;border-radius:7px;background:white}button{background:#176f66;color:white;border:0;cursor:pointer;margin-top:22px;font-weight:650}button:disabled{opacity:.6;cursor:wait}button.secondary{background:#e9f3f1;color:#176f66;margin-top:10px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{background:#f4f8fa;border-radius:9px;padding:12px}.stat strong{display:block;font-size:24px}.stat span{font-size:12px;color:#546b7a}canvas{width:100%;height:auto;border:1px solid #e1e8ed;border-radius:8px}.small{font-size:13px;color:#536b7b}.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:13px}#status{min-height:48px;margin:12px 0 0;font-size:14px}details{margin-top:24px}summary{cursor:pointer;font-weight:650}#download[hidden]{display:none}@media(max-width:800px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}h1{font-size:28px}}
+</style>
+<main>
+<div class="tag">AI 310 / CS361 · Course project</div>
+<h1>Sensor Placement Lab</h1>
+<p class="intro">Place fewer sensors while covering every free grid point and keeping a path to the base station. Compare a Genetic Algorithm (GA) with a Memetic Algorithm (MA).</p>
+<div class="layout">
+<form class="panel" id="controls">
+<h2>Set up a run</h2>
+<label for="terrain">Terrain</label><select id="terrain"><option value="open_field">Open field</option><option value="two_walls" selected>Two walls</option><option value="courtyard">Courtyard</option></select>
+<label for="algorithm">Algorithm</label><select id="algorithm"><option value="ga">GA — Genetic Algorithm</option><option value="ma" selected>MA — Memetic Algorithm</option></select>
+<label for="seed">Random seed</label><input id="seed" type="number" min="0" max="4294967295" step="1" value="42" required>
+<label for="generations">Generations</label><input id="generations" type="number" min="1" max="150" step="1" value="50" required>
+<button id="run" type="submit">Run algorithm</button>
+<button type="button" class="secondary" id="download" hidden>Download result (JSON)</button>
+<p id="status" role="status" aria-live="polite">Choose a terrain, then start a run.</p>
+<p class="small">Use the same seed and settings when comparing GA and MA. MA uses extra work for local search.</p>
+</form>
+<section class="panel" aria-label="Results">
+<div class="stats"><div class="stat"><strong id="sensors">—</strong><span>Sensors used</span></div><div class="stat"><strong id="coverage">—</strong><span>Grid coverage</span></div><div class="stat"><strong id="connectivity">—</strong><span>Connected sensors</span></div><div class="stat"><strong id="time">—</strong><span>Run time</span></div></div>
+<canvas id="map" width="880" height="640" aria-label="Sensor placement map">Your browser needs canvas support to show the sensor map.</canvas>
+<div class="legend"><span>🟩 Covered point</span><span>× Coverage hole</span><span>🔵 Sensor</span><span>🟧 Disconnected sensor</span><span>★ Base</span><span>⬛ Obstacle</span></div>
+<p class="small">Lines show valid communication links. Range circles are not drawn because walls can block them. Coverage is checked at the free grid points, not at every possible point between them.</p>
+</section>
+</div>
+<details class="panel"><summary>How it works</summary><p>GA keeps a population of layouts. It selects better layouts, combines them, and changes sensor locations. MA adds a small local search: it moves sensors towards holes or the connected network, then checks if a redundant sensor can be removed.</p><p>A result is feasible only when coverage and connectivity are both 100%. The base station sends data but does not sense. Touching an obstacle blocks a signal. These methods search for a small sensor count; they do not prove the global minimum.</p></details>
+</main>
+<script>
+const $=id=>document.getElementById(id);let latest=null;
+function free(p,t){return !t.obstacles.some(([a,b,c,d])=>p[0]>=a&&p[0]<=c&&p[1]>=b&&p[1]<=d)}
+function visible(a,b,rects){for(const [x0,y0,x1,y1] of rects){let low=0,high=1;for(const [s,e,l,u] of [[a[0],b[0],x0,x1],[a[1],b[1],y0,y1]]){const d=e-s;if(d===0){if(s<l||s>u){low=1;high=0;break}}else{const p=(l-s)/d,q=(u-s)/d;low=Math.max(low,Math.min(p,q));high=Math.min(high,Math.max(p,q))}}if(low<=high)return false}return true}
+const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function draw(r){const c=$('map'),ctx=c.getContext('2d'),t=r.terrain,n=r.coordinates;ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#f9fbfc';ctx.fillRect(0,0,c.width,c.height);const scale=Math.min((c.width-90)/t.width,(c.height-90)/t.height),xy=p=>[45+p[0]*scale,c.height-45-p[1]*scale];const link=(a,b)=>distance(a,b)<=t.communication_range+1e-12&&visible(a,b,t.obstacles);const connected=n.map(p=>link(p,t.base));let changed=true;while(changed){changed=false;for(let i=0;i<n.length;i++)if(!connected[i]&&n.some((p,j)=>connected[j]&&link(n[i],p))){connected[i]=true;changed=true}}
+for(let y=0;y<t.height;y++)for(let x=0;x<t.width;x++){const p=[x,y];if(!free(p,t))continue;const hit=n.some(s=>distance(p,s)<=t.sensing_range+1e-12&&visible(p,s,t.obstacles)),[a,b]=xy(p);ctx.fillStyle=hit?'#a8d7c5':'#ce3d50';ctx.beginPath();ctx.arc(a,b,hit?3:4,0,2*Math.PI);ctx.fill()}
+for(const [a,b,d,e] of t.obstacles){const [x,y]=xy([a,e]);ctx.fillStyle='#3a4653';ctx.fillRect(x,y,(d-a)*scale,(e-b)*scale)}ctx.strokeStyle='#629c9099';ctx.lineWidth=1.2;for(let i=0;i<n.length;i++){const edges=n.slice(0,i).concat([t.base]);for(const p of edges)if(link(n[i],p)){ctx.beginPath();ctx.moveTo(...xy(n[i]));ctx.lineTo(...xy(p));ctx.stroke()}}
+n.forEach((p,i)=>{const [x,y]=xy(p);ctx.fillStyle=connected[i]?'#126c9b':'#e77e21';ctx.beginPath();ctx.arc(x,y,7,0,2*Math.PI);ctx.fill();ctx.strokeStyle='white';ctx.stroke()});const [bx,by]=xy(t.base);ctx.fillStyle='#e8a725';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText('★',bx,by+9);ctx.fillStyle='#536b7b';ctx.font='14px system-ui';ctx.textAlign='left';ctx.fillText(`${t.name} · ${t.width} × ${t.height} grid`,30,25)}
+$('controls').addEventListener('submit',async e=>{e.preventDefault();$('run').disabled=true;$('status').textContent='Running… Please wait.';try{const response=await fetch('/api/solve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terrain:$('terrain').value,algorithm:$('algorithm').value,seed:Number($('seed').value),generations:Number($('generations').value)})});const data=await response.json();if(!response.ok)throw Error(data.error||'Run failed');latest=data;const m=data.metrics;$('sensors').textContent=m.sensors;$('coverage').textContent=(100*m.coverage).toFixed(1)+'%';$('connectivity').textContent=(100*m.connectivity).toFixed(1)+'%';$('time').textContent=data.runtime_seconds.toFixed(2)+'s';$('status').textContent=(m.feasible?'Feasible layout. ':'Still needs repair. ')+data.evaluations+' fitness evaluations.';$('download').hidden=false;draw(data)}catch(error){$('status').textContent=error.message}finally{$('run').disabled=false}});
+$('download').onclick=()=>{if(!latest)return;const url=URL.createObjectURL(new Blob([JSON.stringify(latest,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`${latest.terrain.name}-${latest.algorithm}-${latest.seed}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+const ctx=$('map').getContext('2d');ctx.fillStyle='#536b7b';ctx.font='18px system-ui';ctx.fillText('Your sensor layout will appear here.',40,65);
+</script>
+</html>

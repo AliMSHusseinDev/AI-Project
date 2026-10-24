@@ -1,0 +1,9 @@
+{
+  "name": "open_field",
+  "width": 20,
+  "height": 16,
+  "base": [0, 0],
+  "sensing_range": 4.5,
+  "communication_range": 7.0,
+  "obstacles": []
+}

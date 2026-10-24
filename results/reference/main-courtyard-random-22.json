@@ -1,0 +1,129 @@
+{
+  "algorithm": "random",
+  "seed": 22,
+  "terrain": {
+    "name": "courtyard",
+    "width": 26,
+    "height": 20,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": [
+      [
+        7,
+        4,
+        9,
+        14
+      ],
+      [
+        16,
+        5,
+        18,
+        16
+      ],
+      [
+        10,
+        14,
+        15,
+        16
+      ]
+    ]
+  },
+  "settings": {},
+  "coordinates": [
+    [
+      7,
+      0
+    ],
+    [
+      11,
+      1
+    ],
+    [
+      11,
+      2
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      11,
+      4
+    ],
+    [
+      14,
+      5
+    ],
+    [
+      20,
+      5
+    ],
+    [
+      6,
+      6
+    ],
+    [
+      12,
+      8
+    ],
+    [
+      13,
+      12
+    ],
+    [
+      14,
+      12
+    ],
+    [
+      2,
+      15
+    ],
+    [
+      12,
+      17
+    ],
+    [
+      18,
+      18
+    ],
+    [
+      17,
+      19
+    ]
+  ],
+  "location_ids": [
+    7,
+    37,
+    63,
+    84,
+    112,
+    138,
+    141,
+    153,
+    196,
+    277,
+    278,
+    323,
+    367,
+    399,
+    424
+  ],
+  "metrics": {
+    "sensors": 15,
+    "covered": 319,
+    "total": 433,
+    "coverage": 0.7367205542725174,
+    "connected": 10,
+    "connectivity": 0.6666666666666666,
+    "components": 4,
+    "feasible": false
+  },
+  "history": [],
+  "evaluations": 1,
+  "runtime_seconds": 0.00020218500003466033,
+  "suite": "main"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "two_walls",
+  "width": 24,
+  "height": 18,
+  "base": [0, 0],
+  "sensing_range": 4.5,
+  "communication_range": 7.0,
+  "obstacles": [[7, 2, 9, 11], [15, 7, 17, 16]]
+}

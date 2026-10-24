@@ -1,0 +1,38 @@
+[
+  {
+    "key": "huang2005",
+    "url": "https://link.springer.com/article/10.1007/s11036-005-1564-y",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "key": "bai2006",
+    "url": "https://dl.acm.org/doi/10.1145/1132905.1132921",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "key": "neri2012",
+    "url": "https://api.elsevier.com/content/article/pii/S2210650211000691?httpAccept=text/xml",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "key": "meguerdichian2001",
+    "url": "https://ieeexplore.ieee.org/document/916633",
+    "status": 202,
+    "bytes": 0,
+    "content_type": "text/html; charset=UTF-8"
+  },
+  {
+    "key": "dhillon2003",
+    "url": "https://ieeexplore.ieee.org/document/1200627",
+    "status": 202,
+    "bytes": 0,
+    "content_type": "text/html; charset=UTF-8"
+  },
+  {
+    "key": "deb2002",
+    "url": "https://ieeexplore.ieee.org/document/996017",
+    "status": 202,
+    "bytes": 0,
+    "content_type": "text/html; charset=UTF-8"
+  }
+]

@@ -1,0 +1,2 @@
+# Optional: run the real-browser smoke test with a local Chromium installation.
+playwright==1.62.0

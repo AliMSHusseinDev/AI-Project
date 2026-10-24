@@ -1,0 +1,434 @@
+{
+  "algorithm": "ma",
+  "seed": 55,
+  "settings": {
+    "population": 36,
+    "generations": 10000,
+    "max_sensors": 70,
+    "mutation_rate": 0.85,
+    "crossover_rate": 0.9,
+    "elite": 2,
+    "local_elites": 4,
+    "local_steps": 2,
+    "move_radius": 3,
+    "evaluation_budget": 3000
+  },
+  "terrain": {
+    "name": "two_walls",
+    "width": 24,
+    "height": 18,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": [
+      [
+        7,
+        2,
+        9,
+        11
+      ],
+      [
+        15,
+        7,
+        17,
+        16
+      ]
+    ]
+  },
+  "coordinates": [
+    [
+      2,
+      0
+    ],
+    [
+      9,
+      0
+    ],
+    [
+      15,
+      3
+    ],
+    [
+      21,
+      4
+    ],
+    [
+      12,
+      5
+    ],
+    [
+      4,
+      6
+    ],
+    [
+      22,
+      10
+    ],
+    [
+      0,
+      13
+    ],
+    [
+      4,
+      13
+    ],
+    [
+      11,
+      13
+    ],
+    [
+      19,
+      15
+    ],
+    [
+      11,
+      17
+    ]
+  ],
+  "location_ids": [
+    2,
+    9,
+    81,
+    108,
+    120,
+    136,
+    223,
+    264,
+    268,
+    275,
+    322,
+    359
+  ],
+  "metrics": {
+    "sensors": 12,
+    "covered": 372,
+    "total": 372,
+    "coverage": 1.0,
+    "connected": 12,
+    "connectivity": 1.0,
+    "components": 1,
+    "feasible": true
+  },
+  "history": [
+    {
+      "generation": 0,
+      "evaluations": 33,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 1,
+      "evaluations": 229,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 2,
+      "evaluations": 416,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 3,
+      "evaluations": 613,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 4,
+      "evaluations": 757,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 5,
+      "evaluations": 966,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 6,
+      "evaluations": 1116,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 7,
+      "evaluations": 1241,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 8,
+      "evaluations": 1394,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 9,
+      "evaluations": 1519,
+      "fitness": 10.8,
+      "sensors": 14,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 14,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 10,
+      "evaluations": 1693,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 11,
+      "evaluations": 1794,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 12,
+      "evaluations": 1907,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 13,
+      "evaluations": 2051,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 14,
+      "evaluations": 2155,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 15,
+      "evaluations": 2265,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 16,
+      "evaluations": 2337,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 17,
+      "evaluations": 2388,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 18,
+      "evaluations": 2468,
+      "fitness": 10.814285714285715,
+      "sensors": 13,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 13,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 19,
+      "evaluations": 2578,
+      "fitness": 10.82857142857143,
+      "sensors": 12,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 12,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 20,
+      "evaluations": 2706,
+      "fitness": 10.82857142857143,
+      "sensors": 12,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 12,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 21,
+      "evaluations": 2849,
+      "fitness": 10.82857142857143,
+      "sensors": 12,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 12,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 22,
+      "evaluations": 2994,
+      "fitness": 10.82857142857143,
+      "sensors": 12,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 12,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    },
+    {
+      "generation": 22,
+      "evaluations": 3000,
+      "fitness": 10.82857142857143,
+      "sensors": 12,
+      "covered": 372,
+      "total": 372,
+      "coverage": 1.0,
+      "connected": 12,
+      "connectivity": 1.0,
+      "components": 1,
+      "feasible": true
+    }
+  ],
+  "evaluations": 3000,
+  "setup_evaluations": 0,
+  "runtime_seconds": 0.2525388550000116,
+  "stop_reason": "evaluation_budget",
+  "suite": "equal_budget"
+}

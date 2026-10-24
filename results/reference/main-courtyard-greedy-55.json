@@ -1,0 +1,129 @@
+{
+  "algorithm": "greedy",
+  "seed": 55,
+  "terrain": {
+    "name": "courtyard",
+    "width": 26,
+    "height": 20,
+    "base": [
+      0,
+      0
+    ],
+    "sensing_range": 4.5,
+    "communication_range": 7.0,
+    "obstacles": [
+      [
+        7,
+        4,
+        9,
+        14
+      ],
+      [
+        16,
+        5,
+        18,
+        16
+      ],
+      [
+        10,
+        14,
+        15,
+        16
+      ]
+    ]
+  },
+  "settings": {},
+  "coordinates": [
+    [
+      21,
+      0
+    ],
+    [
+      6,
+      1
+    ],
+    [
+      3,
+      3
+    ],
+    [
+      17,
+      3
+    ],
+    [
+      12,
+      4
+    ],
+    [
+      21,
+      4
+    ],
+    [
+      23,
+      8
+    ],
+    [
+      3,
+      10
+    ],
+    [
+      12,
+      10
+    ],
+    [
+      21,
+      10
+    ],
+    [
+      6,
+      15
+    ],
+    [
+      21,
+      15
+    ],
+    [
+      3,
+      17
+    ],
+    [
+      12,
+      17
+    ],
+    [
+      21,
+      17
+    ]
+  ],
+  "location_ids": [
+    21,
+    32,
+    81,
+    95,
+    113,
+    122,
+    204,
+    230,
+    236,
+    242,
+    327,
+    333,
+    358,
+    367,
+    376
+  ],
+  "metrics": {
+    "sensors": 15,
+    "covered": 433,
+    "total": 433,
+    "coverage": 1.0,
+    "connected": 15,
+    "connectivity": 1.0,
+    "components": 1,
+    "feasible": true
+  },
+  "history": [],
+  "evaluations": 37,
+  "runtime_seconds": 0.004183162999993328,
+  "suite": "main"
+}

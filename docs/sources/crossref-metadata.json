@@ -1,0 +1,446 @@
+{
+  "meguerdichian2001": {
+    "DOI": "10.1109/infcom.2001.916633",
+    "type": "proceedings-article",
+    "page": "1380-1387",
+    "title": [
+      "Coverage problems in wireless ad-hoc sensor networks"
+    ],
+    "volume": "3",
+    "author": [
+      {
+        "given": "S.",
+        "family": "Meguerdichian",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "F.",
+        "family": "Koushanfar",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "M.",
+        "family": "Potkonjak",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "M.B.",
+        "family": "Srivastava",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "Proceedings IEEE INFOCOM 2001. Conference on Computer Communications. Twentieth Annual Joint Conference of the IEEE Computer and Communications Society (Cat. No.01CH37213)"
+    ],
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx5/7321/19795/00916633.pdf?arnumber=916633",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/infcom.2001.916633"
+  },
+  "huang2005": {
+    "issue": "4",
+    "DOI": "10.1007/s11036-005-1564-y",
+    "type": "journal-article",
+    "page": "519-528",
+    "title": [
+      "The Coverage Problem in a Wireless Sensor Network"
+    ],
+    "volume": "10",
+    "author": [
+      {
+        "given": "Chi-Fu",
+        "family": "Huang",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Yu-Chee",
+        "family": "Tseng",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "Mobile Networks and Applications"
+    ],
+    "link": [
+      {
+        "URL": "http://link.springer.com/content/pdf/10.1007/s11036-005-1564-y.pdf",
+        "content-type": "application/pdf",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "http://link.springer.com/article/10.1007/s11036-005-1564-y/fulltext.html",
+        "content-type": "text/html",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "http://link.springer.com/content/pdf/10.1007/s11036-005-1564-y",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1007/s11036-005-1564-y",
+    "published": {
+      "date-parts": [
+        [
+          2005,
+          8
+        ]
+      ]
+    }
+  },
+  "bai2006": {
+    "DOI": "10.1145/1132905.1132921",
+    "type": "proceedings-article",
+    "page": "131-142",
+    "title": [
+      "Deploying wireless sensors to achieve both coverage and connectivity"
+    ],
+    "author": [
+      {
+        "given": "Xiaole",
+        "family": "Bai",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "The Ohio State University Suzhou University, Columbus, OH, USA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Santosh",
+        "family": "Kumar",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "The Ohio State University Suzhou University, Columbus, OH, USA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Dong",
+        "family": "Xuan",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "The Ohio State University Suzhou University, Columbus, OH, USA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Ziqiu",
+        "family": "Yun",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Suzhou University, Suzhou, P.R.CHINA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Ten H.",
+        "family": "Lai",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "The Ohio State University Suzhou University, Columbus, OH, USA"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "Proceedings of the 7th ACM international symposium on Mobile ad hoc networking and computing"
+    ],
+    "link": [
+      {
+        "URL": "https://dl.acm.org/doi/10.1145/1132905.1132921",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "https://dl.acm.org/doi/pdf/10.1145/1132905.1132921",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1145/1132905.1132921",
+    "published": {
+      "date-parts": [
+        [
+          2006,
+          5,
+          22
+        ]
+      ]
+    }
+  },
+  "dhillon2003": {
+    "DOI": "10.1109/wcnc.2003.1200627",
+    "type": "proceedings-article",
+    "page": "1609-1614",
+    "title": [
+      "Sensor placement for effective coverage and surveillance in distributed sensor networks"
+    ],
+    "volume": "3",
+    "author": [
+      {
+        "given": "S.S.",
+        "family": "Dhillon",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "K.",
+        "family": "Chakrabarty",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "2003 IEEE Wireless Communications and Networking, 2003. WCNC 2003."
+    ],
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx5/8546/27030/01200627.pdf?arnumber=1200627",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/wcnc.2003.1200627"
+  },
+  "deb2002": {
+    "issue": "2",
+    "DOI": "10.1109/4235.996017",
+    "type": "journal-article",
+    "page": "182-197",
+    "title": [
+      "A fast and elitist multiobjective genetic algorithm: NSGA-II"
+    ],
+    "volume": "6",
+    "author": [
+      {
+        "given": "K.",
+        "family": "Deb",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "A.",
+        "family": "Pratap",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "S.",
+        "family": "Agarwal",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "T.",
+        "family": "Meyarivan",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "IEEE Transactions on Evolutionary Computation"
+    ],
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx5/4235/21497/00996017.pdf?arnumber=996017",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/4235.996017",
+    "published": {
+      "date-parts": [
+        [
+          2002,
+          4
+        ]
+      ]
+    }
+  },
+  "neri2012": {
+    "DOI": "10.1016/j.swevo.2011.11.003",
+    "type": "journal-article",
+    "page": "1-14",
+    "title": [
+      "Memetic algorithms and memetic computing optimization: A literature review"
+    ],
+    "volume": "2",
+    "author": [
+      {
+        "given": "Ferrante",
+        "family": "Neri",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Carlos",
+        "family": "Cotta",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "container-title": [
+      "Swarm and Evolutionary Computation"
+    ],
+    "link": [
+      {
+        "URL": "https://api.elsevier.com/content/article/PII:S2210650211000691?httpAccept=text/xml",
+        "content-type": "text/xml",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "https://api.elsevier.com/content/article/PII:S2210650211000691?httpAccept=text/plain",
+        "content-type": "text/plain",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      }
+    ],
+    "URL": "https://doi.org/10.1016/j.swevo.2011.11.003",
+    "published": {
+      "date-parts": [
+        [
+          2012,
+          2
+        ]
+      ]
+    }
+  }
+}

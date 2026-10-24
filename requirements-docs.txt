@@ -1,0 +1,4 @@
+# Optional: rebuild the printable report and editable Word document.
+reportlab==4.4.9
+python-docx==1.2.0
+pypdf==6.10.0
