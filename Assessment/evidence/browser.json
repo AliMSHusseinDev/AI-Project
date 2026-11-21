@@ -1,0 +1,7 @@
+[
+  "Manual editor: click-drag from first selection, swept collision, fixed neighbor, undo, redo, empty drag, R handles, resize to boundary, Delete, O and typing guard.",
+  "Grid and obstacle sliders: 100 by 100 terrain, 66 valid obstacles, invalid shrink preserved layout.",
+  "GA, MA and paired comparison completed. Both results passed independent validation. Fine sampling, algorithm switching and layer toggle worked.",
+  "CSV downloaded with matching server bytes. Editing the sensing radius disabled validation and export.",
+  "One full benchmark trial returned ten summary rows through the browser. No uncaught page errors."
+]

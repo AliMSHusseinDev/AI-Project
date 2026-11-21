@@ -1,0 +1,20 @@
+{
+  "size": 20,
+  "base": [
+    10,
+    10
+  ],
+  "sensing": 5.5,
+  "communication": 8.0,
+  "spacing": 2,
+  "seed": 42,
+  "obstacles": [
+    {
+      "id": "block-0",
+      "x": 8,
+      "y": 7,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}
