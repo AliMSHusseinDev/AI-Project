@@ -3,15 +3,28 @@ import {
   SlidersHorizontal,
   Shuffle,
   MousePointer2,
-  Settings2,
   Undo2,
   Redo2,
   Trash2,
   Plus,
-  ChevronDown,
 } from "lucide-react";
 import type { Env, Limits } from "./types";
 
+const tips: Record<string, string> = {
+  "Site spacing": "Grid units between adjacent monitoring and candidate sites.",
+  "Environment seed":
+    "Repeat automatic obstacle placement with the same settings.",
+  "Algorithm seed": "Repeat the random choices of the search.",
+  Population: "Deployments maintained in each full generation.",
+  Generations: "Maximum evolutionary rounds.",
+  "Evaluation budget": "Maximum new unique fitness scores per method.",
+  "Local fraction":
+    "Probability of local search on each MA child (0.45 means 45%).",
+  "Base station X": "Column of the station center.",
+  "Base station Y": "Row of the station center.",
+  "Sensing radius": "Maximum clear sensing distance in grid units.",
+  "Communication radius": "Maximum clear radio distance in grid units.",
+};
 export function NumberField({
   label,
   value,
@@ -30,7 +43,7 @@ export function NumberField({
   const [draft, update] = useState(String(value));
   useEffect(() => update(String(value)), [value]);
   return (
-    <label className="num-field">
+    <label className="num-field" title={tips[label]}>
       {label}
       <input
         aria-label={label}
@@ -67,6 +80,7 @@ type Props = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  capacity: number;
   remove: () => void;
 };
 export function Controls(p: Props) {
@@ -160,7 +174,10 @@ export function Controls(p: Props) {
         {p.manual ? (
           <>
             <div className="row wrap">
-              <button onClick={() => p.generate(true)}>
+              <button
+                disabled={p.capacity === 0}
+                onClick={() => p.generate(true)}
+              >
                 <Plus />
                 Add (O)
               </button>
@@ -198,7 +215,7 @@ export function Controls(p: Props) {
             set={(sensing) => p.change({ ...env, sensing })}
           />
           <NumberField
-            label="Comm. radius"
+            label="Communication radius"
             value={env.communication}
             min={0.1}
             max={30}
@@ -206,43 +223,41 @@ export function Controls(p: Props) {
             set={(communication) => p.change({ ...env, communication })}
           />
         </div>
-        <details>
-          <summary>
-            <Settings2 />
-            Advanced settings
-            <ChevronDown />
-          </summary>
-          <div className="two">
-            <NumberField
-              label="Base X"
-              min={0}
-              max={env.size - 1}
-              value={env.base[0]}
-              set={(x) => p.change({ ...env, base: [x, env.base[1]] })}
-            />
-            <NumberField
-              label="Base Y"
-              min={0}
-              max={env.size - 1}
-              value={env.base[1]}
-              set={(y) => p.change({ ...env, base: [env.base[0], y] })}
-            />
-            <NumberField
-              label="Site spacing"
-              min={2}
-              max={6}
-              value={env.spacing}
-              set={(spacing) => p.change({ ...env, spacing })}
-            />
-            <NumberField
-              label="Environment seed"
-              min={0}
-              max={2147483647}
-              value={env.seed}
-              set={(seed) => p.change({ ...env, seed })}
-            />
-          </div>
-        </details>
+        <hr />
+        <h3>Terrain parameters</h3>
+        <p className="hint">
+          Drag the station to move it. Select it and press R over it to resize.
+        </p>
+        <div className="two">
+          <NumberField
+            label="Base station X"
+            min={0}
+            max={env.size - 1}
+            value={env.base[0]}
+            set={(x) => p.change({ ...env, base: [x, env.base[1]] })}
+          />
+          <NumberField
+            label="Base station Y"
+            min={0}
+            max={env.size - 1}
+            value={env.base[1]}
+            set={(y) => p.change({ ...env, base: [env.base[0], y] })}
+          />
+          <NumberField
+            label="Site spacing"
+            min={2}
+            max={6}
+            value={env.spacing}
+            set={(spacing) => p.change({ ...env, spacing })}
+          />
+          <NumberField
+            label="Environment seed"
+            min={0}
+            max={2147483647}
+            value={env.seed}
+            set={(seed) => p.change({ ...env, seed })}
+          />
+        </div>
       </div>
     </section>
   );

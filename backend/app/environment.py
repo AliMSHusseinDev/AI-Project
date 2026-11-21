@@ -38,6 +38,7 @@ class Obstacle(Model):
 class Environment(Model):
     size: int = Field(default=30, ge=20, le=100)
     base: Point = (15, 15)
+    base_margin: int = Field(default=0, ge=0, le=5)
     sensing: float = Field(default=5.5, gt=0, le=30)
     communication: float = Field(default=8, gt=0, le=30)
     spacing: int = Field(default=2, ge=2, le=6)
@@ -48,9 +49,34 @@ class Environment(Model):
     def obstacle_limit(self):
         return max(1, self.size**2 // AREA_PER_OBSTACLE)
 
+    @property
+    def base_footprint(self):
+        margin = self.base_margin
+        return Obstacle(
+            id="station",
+            x=self.base[0] - margin,
+            y=self.base[1] - margin,
+            w=2 * margin + 1,
+            h=2 * margin + 1,
+        )
+
+    @property
+    def additional_capacity(self):
+        used = sum(r.w * r.h for r in self.obstacles)
+        # Every free cell outside the footprint fits one minimum-size (1 x 1) block.
+        free_cells = self.size**2 - used - (2 * self.base_margin + 1) ** 2
+        return min(
+            self.obstacle_limit - len(self.obstacles),
+            MAX_BLOCKED_PERCENT * self.size**2 // 100 - used,
+            free_cells,
+        )
+
     @model_validator(mode="after")
     def validate_layout(self):
-        if not all(0 <= value < self.size for value in self.base):
+        if not all(
+            self.base_margin <= value < self.size - self.base_margin
+            for value in self.base
+        ):
             raise ValueError("Base station lies outside the grid.")
         if len(self.obstacles) > self.obstacle_limit:
             raise ValueError("Too many obstacles for this grid.")
@@ -65,7 +91,7 @@ class Environment(Model):
             if (
                 rect.x + rect.w > self.size
                 or rect.y + rect.h > self.size
-                or rect.contains(self.base)
+                or rect.overlaps(self.base_footprint)
             ):
                 raise ValueError("Obstacle crosses the grid edge or covers the base.")
             if any(rect.overlaps(other) for other in self.obstacles[:index]):
@@ -79,22 +105,21 @@ class Environment(Model):
     def monitoring_points(self):
         return [
             (x, y)
-            for y in range(self.size)
-            for x in range(self.size)
+            for y in range(0, self.size, self.spacing)
+            for x in range(0, self.size, self.spacing)
             if not any(rect.contains((x, y)) for rect in self.obstacles)
         ]
 
     def candidate_positions(self):
-        return [
-            p
-            for p in self.monitoring_points()
-            if p != self.base and all(v % self.spacing == 0 for v in p)
-        ]
+        station = self.base_footprint
+        return [p for p in self.monitoring_points() if not station.contains(p)]
 
 
 def generate(environment, count, append=False):
     if not 0 <= count <= environment.obstacle_limit:
         raise ValueError("Requested count exceeds the grid limit.")
+    if append and count - len(environment.obstacles) > environment.additional_capacity:
+        raise ValueError("Not enough free obstacle capacity on this terrain.")
     rectangles = list(environment.obstacles) if append else []
     rng = random.Random(environment.seed + (len(rectangles) * 7919 if append else 0))
     remaining_area = MAX_BLOCKED_PERCENT * environment.size**2 // 100 - sum(
@@ -120,16 +145,7 @@ def generate(environment, count, append=False):
         )
         if any(
             rect.id == r.id or rect.overlaps(r) for r in rectangles
-        ) or rect.contains(environment.base):
-            continue
-        bx, by = environment.base
-        exits = [(bx + 1, by), (bx - 1, by), (bx, by - 1), (bx, by + 1)]
-        if not any(
-            0 <= x < environment.size
-            and 0 <= y < environment.size
-            and not any(r.contains((x, y)) for r in [*rectangles, rect])
-            for x, y in exits
-        ):
+        ) or rect.overlaps(environment.base_footprint):
             continue
         rectangles.append(rect)
         remaining_area -= width * height

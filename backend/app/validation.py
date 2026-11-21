@@ -33,11 +33,34 @@ def coverage_mask(environment, sensors, points):
     return covered
 
 
-def validate(environment, result, fine=False):
+def validate(environment, result):
+    try:
+        type(environment).model_validate(environment.model_dump())
+    except ValueError:
+        return dict(
+            passed=False,
+            checks={"Environment integrity": False},
+            coverage=0,
+            connectivity=0,
+        )
     sensors = [tuple(p) for p in result["positions"]]
-    allowed = set(environment.candidate_positions())
+    # Build the audit domain from occupied cells, independently of the search masks.
+    blocked = {
+        (x, y)
+        for r in environment.obstacles
+        for y in range(r.y, r.y + r.h)
+        for x in range(r.x, r.x + r.w)
+    }
+    lattice = [
+        (x, y)
+        for y in range(0, environment.size, environment.spacing)
+        for x in range(0, environment.size, environment.spacing)
+        if (x, y) not in blocked
+    ]
+    footprint = environment.base_footprint
+    allowed = {point for point in lattice if not footprint.contains(point)}
     valid = len(sensors) == len(set(sensors)) and all(p in allowed for p in sensors)
-    points = np.array(environment.monitoring_points())
+    points = np.array(lattice).reshape(-1, 2)
     mask = coverage_mask(environment, sensors, points)
     positions = np.array([environment.base, *sensors])
     pending, reached = [0], {0}
@@ -59,6 +82,7 @@ def validate(environment, result, fine=False):
     holes = {tuple(p) for p in points[~mask].tolist()}
     unreachable = {sensors[i - 1] for i in range(1, len(positions)) if i not in reached}
     checks = {
+        "Environment integrity": True,
         "Environment identity": environment.identifier() == result["environment_id"],
         "Unique legal coordinates": valid,
         "Active count": result["count"] == len(sensors),
@@ -77,14 +101,4 @@ def validate(environment, result, fine=False):
         coverage=coverage,
         connectivity=connectivity,
     )
-    if fine:
-        subpoints = np.concatenate(
-            [points + [dx, dy] for dx in (-0.25, 0.25) for dy in (-0.25, 0.25)]
-        )
-        covered = coverage_mask(environment, sensors, subpoints)
-        report["fine"] = dict(
-            covered=int(covered.sum()),
-            total=len(subpoints),
-            percent=100 * float(covered.mean()),
-        )
     return report

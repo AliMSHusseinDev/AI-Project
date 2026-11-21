@@ -97,15 +97,10 @@ def test_proven_infeasibility_and_audit():
     assert result["generations"] == 0
 
 
-def test_independent_audit_tampering_and_fine_grid():
+def test_independent_audit_detects_tampering():
     env = Environment(size=20)
     result = optimize(env, Settings(), "MA")
-    fine = validate(env, result, True)
-    assert (
-        fine["passed"]
-        and fine["fine"]["total"] == 1600
-        and fine["fine"]["covered"] <= 1600
-    )
+    assert validate(env, result)["passed"]
     for patch in (
         {"count": 99},
         {"coverage": 0},
@@ -120,8 +115,8 @@ def test_independent_audit_tampering_and_fine_grid():
         assert not validate(env, result | patch)["passed"]
 
 
-def test_fine_sampling_reveals_gap():
-    env = Environment(size=20, base=(2, 2), sensing=26.88, communication=4)
+def test_grid_coverage_checks_every_available_site():
+    env = Environment(size=20, base=(2, 2), sensing=25.5, communication=4)
     result = dict(
         positions=[(0, 0)],
         environment_id=env.identifier(),
@@ -132,5 +127,47 @@ def test_fine_sampling_reveals_gap():
         connectivity=100,
         feasible=True,
     )
-    report = validate(env, result, fine=True)
-    assert report["passed"] and report["fine"]["percent"] < 100
+    assert validate(env, result)["passed"]
+    # (18,18) is just beyond the new radius. A nearby obstacle can hide it too.
+    smaller = env.model_copy(update={"sensing": 25})
+    audit = validate(smaller, result | {"environment_id": smaller.identifier()})
+    assert not audit["passed"] and audit["coverage"] == 99
+    isolated = env.model_copy(update={"communication": 1})
+    assert not validate(isolated, result | {"environment_id": isolated.identifier()})[
+        "checks"
+    ]["Every sensor can route to base"]
+
+
+def test_budget_stop_and_generation_stop():
+    env = Environment(size=20)
+    for method in ("GA", "MA"):
+        one = optimize(env, Settings(generations=1, budget=600), method)
+        assert (
+            one["termination"] == "Generation limit"
+            and one["generations"] == 1
+            and one["evaluations"] < 600
+        )
+        short = optimize(env, Settings(generations=300, budget=80), method)
+        assert (
+            short["termination"] == "Evaluation budget" and short["evaluations"] == 80
+        )
+        assert short["generations"] <= short["history"][-1]["generation"]
+    for fraction in (0, 1):
+        result = optimize(
+            env,
+            Settings(population=8, generations=1, budget=600, local_fraction=fraction),
+            "MA",
+        )
+        assert result["local"]["attempts"] == fraction * 6
+
+
+def test_illegal_sensor_and_invalid_environment_fail_independently():
+    env = generate(Environment(size=20), 2)
+    result = optimize(env, Settings(), "GA")
+    r = env.obstacles[0]
+    assert not validate(env, result | {"positions": [(r.x, r.y)]})["checks"][
+        "Unique legal coordinates"
+    ]
+    assert not validate(env.model_copy(update={"base": (-1, 0)}), result)["checks"][
+        "Environment integrity"
+    ]

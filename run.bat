@@ -10,7 +10,7 @@ call npm ci --no-audit --no-fund
 if errorlevel 1 (popd & goto :failed)
 popd
 if not exist outputs mkdir outputs
-start "Fieldlab API" ".venv\Scripts\python.exe" -m uvicorn backend.app.main:app --port 8000
+start "AI Project API" ".venv\Scripts\python.exe" -m uvicorn backend.app.main:app --port 8000
 pushd frontend
 echo Open http://localhost:5173 when Vite reports ready.
 call npm run dev -- --host 127.0.0.1

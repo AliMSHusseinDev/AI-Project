@@ -77,7 +77,7 @@ def test_candidates_and_monitoring_domain():
     env = Environment(size=20, base=(2, 2), obstacles=[BLOCK])
     points = set(env.monitoring_points())
     sites = set(env.candidate_positions())
-    assert len(points) == 394 and env.base in points and env.base not in sites
+    assert len(points) == 99 and env.base in points and env.base not in sites
     assert (4, 4) in sites and (3, 3) not in sites and (6, 6) not in points
 
 
@@ -88,7 +88,7 @@ def test_visibility_blocks_both_radio_and_sensing():
     terrain = Terrain(env)
     site = terrain.index[(4, 6)]
     assert terrain.base not in terrain.neighbors[site]
-    for point, expected in [((8, 6), 0), ((3, 6), 1), ((19, 19), 0)]:
+    for point, expected in [((8, 6), 0), ((2, 6), 1), ((18, 18), 0)]:
         assert (terrain.masks[site] >> terrain.points.index(point)) & 1 == expected
 
 
@@ -102,7 +102,7 @@ def test_routes_components_and_zero_sensors():
     evaluator = Evaluator(terrain, 10)
     assert evaluator.evaluate(deployment).disconnected == 3
     empty = evaluator.evaluate(frozenset())
-    assert empty.holes == 400 and empty.disconnected == 0
+    assert empty.holes == 100 and empty.disconnected == 0
 
 
 def test_fitness_order_and_cache():
@@ -115,4 +115,41 @@ def test_fitness_order_and_cache():
         < evaluator.evaluate(frozenset()).cost
     )
     assert evaluator.evaluate(single).holes == 0 and len(evaluator.cache) == 3
-    assert evaluator.evaluate(frozenset()).cost == 400 * (len(terrain.sites) + 1)
+    assert evaluator.evaluate(frozenset()).cost == 100 * (len(terrain.sites) + 1)
+
+
+def test_area_and_geometry_capacity_after_edits():
+    full = Obstacle(id="wide", x=0, y=0, w=10, h=6)
+    env = Environment(size=20, obstacles=[full])
+    assert len(env.monitoring_points()) == 85 and env.additional_capacity == 0
+    with pytest.raises(ValueError):
+        generate(env, 2, append=True)
+    smaller = Environment(size=20, obstacles=[full.model_copy(update={"w": 8})])
+    assert len(smaller.monitoring_points()) == 88 and smaller.additional_capacity == 1
+    assert len(generate(smaller, 2, append=True).obstacles) == 2
+    clear = Environment(size=20)
+    assert len(clear.monitoring_points()) == 100 and clear.additional_capacity == 2
+
+
+def test_station_footprint_keeps_center_and_ranges():
+    env = Environment(size=20, base=(10, 10), base_margin=2)
+    assert env.base in env.monitoring_points()
+    assert (8, 8) not in env.candidate_positions()
+    assert env.communication == Environment().communication
+    for patch in (
+        {"base": (1, 1)},
+        {"obstacles": [Obstacle(id="edge", x=12, y=12, w=1, h=1)]},
+    ):
+        with pytest.raises(ValidationError):
+            Environment(**(env.model_dump() | patch))
+    assert Environment.model_validate({"size": 20}).base_margin == 0
+
+
+def test_order_independent_cache_and_last_evaluation():
+    evaluator = Evaluator(Terrain(Environment(size=20)), 2)
+    first = evaluator.evaluate(frozenset([2, 3]))
+    assert evaluator.evaluate(frozenset([3, 2])) is first and len(evaluator.cache) == 1
+    evaluator.evaluate(frozenset([2]))
+    with pytest.raises(ValueError):
+        evaluator.evaluate(frozenset([4]))
+    assert evaluator.evaluate(frozenset([2, 3])) is first and len(evaluator.cache) == 2

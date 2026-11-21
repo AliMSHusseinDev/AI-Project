@@ -71,7 +71,7 @@ def save(path, title, content, series="Course documentation"):
         canvas.setFillColor(GREEN)
         canvas.rect(0, h - 8, w, 8, fill=1, stroke=0)
         canvas.setFont("Helvetica-Bold", 9)
-        canvas.drawString(50, h - 40, "FIELDLAB   /   " + series.upper())
+        canvas.drawString(50, h - 40, "AI PROJECT   /   " + series.upper())
         canvas.setFillColor(GRAY)
         canvas.setFont("Helvetica", 9)
         canvas.drawRightString(w - 50, h - 40, "AI310 / CS361    |    Fall 2026")
@@ -84,7 +84,7 @@ def save(path, title, content, series="Course documentation"):
         str(path),
         pagesize=A4,
         title=title,
-        author="Fieldlab project",
+        author="AI Project",
         leftMargin=47,
         rightMargin=47,
         topMargin=53,
@@ -158,8 +158,8 @@ def flow(memetic):
     steps = [
         ("Start with a fixed environment", "ellipse"),
         ("Build visibility and links. Seed the population.", "box"),
-        ("Score deployments and record the best.", "box"),
-        ("Stop search?", "diamond"),
+        ("Reuse cached scores. Record the best.", "box"),
+        ("Budget or stop?", "diamond"),
         ("Keep two elites. Pick parents by tournament.", "box"),
         ("Cross by region. Mutate sites. Score the child.", "box"),
     ]
@@ -202,7 +202,7 @@ def flow(memetic):
 def dfd():
     d = Drawing(WIDTH, 227)
     box(d, 55, 187, 82, 32, "Student")
-    box(d, 235, 187, 138, 42, "1. Check\nenvironment", "process")
+    box(d, 235, 187, 138, 42, "1. Check grid, blocks\nand station footprint", "process")
     box(d, 411, 187, 130, 42, "2. Optimize\nand validate", "process")
     arrow(d, [(97, 187), (165, 187)], (131, 193, "settings"))
     arrow(d, [(304, 187), (346, 187)], (325, 193, "terrain"))
@@ -220,7 +220,7 @@ def dfd():
 def use_cases():
     d = Drawing(WIDTH, 274)
     d.add(Rect(128, 8, 352, 253, fillColor=None, strokeColor=GRAY))
-    label(d, 304, 245, "Fieldlab deployment studio", 10)
+    label(d, 304, 245, "AI Project deployment studio", 10)
     d.add(Ellipse(44, 148, 9, 9, fillColor=LIGHT, strokeColor=INK))
     for x, y, xx, yy in [
         (44, 139, 44, 110),
@@ -233,7 +233,7 @@ def use_cases():
     # One association per ellipse. The left rail bundles lines from the same actor.
     names = [
         "Configure environment",
-        "Manage obstacles",
+        "Edit station and obstacles",
         "Generate obstacles",
         "Run GA",
         "Run MA",
@@ -255,7 +255,7 @@ def use_cases():
 
 def architecture():
     d = Drawing(WIDTH, 265)
-    box(d, 85, 235, 140, 32, "React + Canvas")
+    box(d, 85, 235, 140, 32, "Environment / Results")
     box(d, 270, 235, 110, 32, "FastAPI jobs")
     arrow(d, [(156, 235), (214, 235)], (185, 242, "requests"))
     box(d, 420, 235, 111, 32, "CSV / PDF / PNG")

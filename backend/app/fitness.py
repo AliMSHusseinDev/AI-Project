@@ -26,7 +26,7 @@ class Score:
 
 
 class Terrain:
-    """Build geometry once per environment. Each bit represents one free cell."""
+    """Build geometry once per environment. Each bit represents one available monitoring site."""
 
     def __init__(self, environment):
         self.env = environment

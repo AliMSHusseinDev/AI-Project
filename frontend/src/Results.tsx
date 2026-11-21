@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Download, ChartNoAxesCombined } from "lucide-react";
-import type { Result, Summary } from "./types";
+import type { Result } from "./types";
 const fields: [string, (r: Result) => string | number][] = [
   ["Solution status", (r) => (r.feasible ? "Feasible" : "Infeasible")],
   ["Active sensors", (r) => r.count],
@@ -16,7 +16,9 @@ const fields: [string, (r: Result) => string | number][] = [
   ["Connectivity", (r) => r.connectivity.toFixed(2) + "%"],
   ["Disconnected sensors", (r) => r.unreachable.length],
   ["Execution time", (r) => r.seconds.toFixed(4) + " s"],
-  ["Fitness evaluations", (r) => r.evaluations],
+  ["Unique fitness evaluations", (r) => r.evaluations],
+  ["Generations completed", (r) => r.generations],
+  ["Termination reason", (r) => r.termination],
   ["Best cost", (r) => r.cost],
   [
     "MA local improvements",
@@ -134,49 +136,5 @@ export function Results({
         </button>
       </div>
     </section>
-  );
-}
-export function BenchTable({ rows }: { rows: Summary[] }) {
-  return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            {[
-              "Scenario",
-              "Method",
-              "Feasible",
-              "Best sensors",
-              "Mean ± SD",
-              "Mean time (s)",
-              "Evaluations",
-              "Coverage",
-              "Connected",
-            ].map((t) => (
-              <th key={t}>{t}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.case + r.algorithm}>
-              <td>{r.case}</td>
-              <td>{r.algorithm}</td>
-              <td>
-                {r.valid}/{r.runs}
-              </td>
-              <td>{r.best ?? "—"}</td>
-              <td>
-                {r.mean?.toFixed(2) ?? "—"} ± {r.sd?.toFixed(2) ?? "—"}
-              </td>
-              <td>{r.seconds.toFixed(3)}</td>
-              <td>{r.evaluations.toFixed(1)}</td>
-              <td>{r.coverage.toFixed(1)}%</td>
-              <td>{r.connectivity.toFixed(1)}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }

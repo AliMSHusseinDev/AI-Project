@@ -1,7 +1,9 @@
 [
+  "Live lattice counts and real addition capacity changed on resize, undo and redo.",
+  "Station offset drag, swept collision, R resize around fixed center, footprint collision, mandatory station, undo and redo.",
   "Manual editor: click-drag from first selection, swept collision, fixed neighbor, undo, redo, empty drag, R handles, resize to boundary, Delete, O and typing guard.",
   "Grid and obstacle sliders: 100 by 100 terrain, 66 valid obstacles, invalid shrink preserved layout.",
-  "GA, MA and paired comparison completed. Both results passed independent validation. Fine sampling, algorithm switching and layer toggle worked.",
-  "CSV downloaded with matching server bytes. Editing the sensing radius disabled validation and export.",
-  "One full benchmark trial returned ten summary rows through the browser. No uncaught page errors."
+  "GA, MA and paired comparison completed. Both results passed independent validation. Algorithm switching and layer toggle worked.",
+  "Three real browser downloads matched server files. Moving the station invalidated validation and export.",
+  "Two-page navigation, visible settings, and mode-specific Local fraction checked. No uncaught page errors."
 ]

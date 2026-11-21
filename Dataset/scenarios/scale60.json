@@ -4,6 +4,7 @@
     30,
     30
   ],
+  "base_margin": 0,
   "sensing": 5.5,
   "communication": 8.0,
   "spacing": 2,

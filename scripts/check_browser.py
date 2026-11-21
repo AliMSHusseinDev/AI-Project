@@ -14,7 +14,13 @@ def check(page, folder):
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto("http://127.0.0.1:5173")
-    expect(page.get_by_text("Engine online")).to_be_visible()
+    expect(page.get_by_role("button", name="Generate obstacles")).to_be_enabled()
+    assert page.title().startswith("AI Project")
+    assert page.locator("nav button").all_text_contents() == ["Environment", "Results"]
+    for obsolete in ("Engine online", "Advanced settings", "Fine sampling"):
+        expect(page.get_by_text(obsolete, exact=True)).to_have_count(0)
+    expect(page.get_by_label("Environment seed", exact=True)).to_be_visible()
+    expect(page.get_by_label("Site spacing", exact=True)).to_be_visible()
     button = lambda name: page.get_by_role("button", name=name, exact=True)
 
     def snapshot():
@@ -56,10 +62,65 @@ def check(page, folder):
             dict(id="B", x=8, y=2, w=2, h=2),
         ],
     }
+
+    def stat(label):
+        return page.locator("dl").get_by_text(label, exact=True).locator("../dd")
+
+    # One large block can consume the full area without reaching the count cap.
+    large = env | {"obstacles": [dict(id="area", x=0, y=0, w=10, h=6)]}
+    load(large)
+    button("Manual").click()
+    expect(stat("Additional obstacles allowed")).to_have_text("0")
+    expect(stat("Available monitoring points")).to_have_text("85")
+    assert button("Add (O)").is_disabled()
+    page.keyboard.press("o")
+    expect(page.get_by_text("No additional obstacle fits", exact=False)).to_be_visible()
+    page.locator("canvas").scroll_into_view_if_needed()
+    page.mouse.click(*grid(5, 3))
+    page.keyboard.press("r")
+    drag((10, 6), (8, 6))
+    expect(stat("Available monitoring points")).to_have_text("88")
+    expect(stat("Additional obstacles allowed")).to_have_text("1")
+    page.keyboard.press("Control+z")
+    expect(stat("Available monitoring points")).to_have_text("85")
+    page.keyboard.press("Control+y")
+    expect(stat("Additional obstacles allowed")).to_have_text("1")
+    evidence.append(
+        "Live lattice counts and real addition capacity changed on resize, undo and redo."
+    )
     load(env)
     button("Manual").click()
     page.locator("canvas").scroll_into_view_if_needed()
+    drag((12.2, 12.7), (12.2, 2.7))
+    assert snapshot()["base"] == [12, 2]
+    drag((12.2, 2.7), (-1, 2.7))
+    assert snapshot()["base"] == [10, 2]
+    expect(button("Delete")).to_be_disabled()
+    page.mouse.move(*grid(10.5, 2.5))
+    page.keyboard.press("r")
+    drag((11, 3), (13, 5))
+    assert snapshot()["base_margin"] == 0
+    page.keyboard.press("Control+z")
+    page.keyboard.press("Control+z")
+    assert snapshot() == env
+    page.mouse.click(*grid(0.5, 0.5))
+    page.mouse.click(*grid(12.5, 12.5))
+    page.keyboard.press("r")
+    drag((13, 13), (15, 15))
+    bigger = snapshot()
+    assert bigger == env | {"base_margin": 2}
+    page.keyboard.press("Control+z")
+    assert snapshot() == env
+    page.keyboard.press("Control+y")
+    assert snapshot() == bigger
+    page.keyboard.press("Control+z")
+    page.mouse.click(*grid(0.5, 0.5))
+    expect(button("Delete")).to_be_disabled()
+    evidence.append(
+        "Station offset drag, swept collision, R resize around fixed center, footprint collision, mandatory station, undo and redo."
+    )
     drag((2.2, 2.2), (15.2, 2.2))
+    expect(stat("Blocked sites")).to_have_text("2")
     moved = snapshot()
     assert (
         moved["obstacles"][0]["x"] == 6 and moved["obstacles"][1] == env["obstacles"][1]
@@ -88,6 +149,7 @@ def check(page, folder):
         "Manual editor: click-drag from first selection, swept collision, fixed neighbor, undo, redo, empty drag, R handles, resize to boundary, Delete, O and typing guard."
     )
     button("Automatic").click()
+    page.locator("#size").scroll_into_view_if_needed()
     slider = page.locator("#size").bounding_box()
     page.mouse.move(slider["x"] + 6, slider["y"] + slider["height"] / 2)
     page.mouse.down()
@@ -112,6 +174,9 @@ def check(page, folder):
     load(env)
     for algorithm in ["GA", "MA"]:
         button(algorithm).click()
+        expect(page.get_by_label("Local fraction", exact=True)).to_have_count(
+            0 if algorithm == "GA" else 1
+        )
         button("Run " + algorithm).click()
         expect(button("Validate Solution")).to_be_enabled(timeout=20000)
         button("Validate Solution").click()
@@ -119,7 +184,7 @@ def check(page, folder):
     button("Comparison").click()
     button("Run comparison").click()
     expect(button("Validate Solution")).to_be_enabled(timeout=20000)
-    page.get_by_text("Fine sampling", exact=True).click()
+
     button("Validate Solution").click()
     expect(page.get_by_text("MA · PASS", exact=True)).to_be_visible()
     page.get_by_label("Displayed algorithm").select_option("1")
@@ -127,40 +192,38 @@ def check(page, folder):
     page.get_by_label("Sensing circles").uncheck()
     button("Layers").click()
     evidence.append(
-        "GA, MA and paired comparison completed. Both results passed independent validation. Fine sampling, algorithm switching and layer toggle worked."
+        "GA, MA and paired comparison completed. Both results passed independent validation. Algorithm switching and layer toggle worked."
     )
     button("Results").click()
-    file = ROOT / "outputs" / "Comparison_Results.csv"
-    if file.exists():
-        raise RuntimeError(
-            "Run browser QA on a clean checkout with an empty outputs folder."
+    for extension, filename in (
+        ("csv", "Comparison_Results.csv"),
+        ("png", "Comparison_Table.png"),
+        ("pdf", "Comparison_Report.pdf"),
+    ):
+        file = ROOT / "outputs" / filename
+        if file.exists():
+            raise RuntimeError("Use an empty outputs folder for browser QA.")
+        page.get_by_label("Comparison export format").select_option(extension)
+        with page.expect_download() as pending:
+            button("Download Comparison").click()
+        assert (
+            pending.value.suggested_filename == filename
+            and file.read_bytes() == Path(pending.value.path()).read_bytes()
         )
-    page.get_by_label("Comparison export format").select_option("csv")
-    with page.expect_download() as pending:
-        button("Download Comparison").click()
-    assert (
-        pending.value.suggested_filename == file.name
-        and file.read_bytes() == Path(pending.value.path()).read_bytes()
-    )
-    file.unlink()
+        file.unlink()
     button("Environment").click()
-    radius = page.get_by_label("Sensing radius", exact=True)
-    radius.fill("6.5")
-    radius.press("Enter")
+    page.locator("canvas").scroll_into_view_if_needed()
+    drag((12.3, 12.6), (13.3, 13.6))
+    assert snapshot()["base"] == [13, 13]
     expect(button("Validate Solution")).to_be_disabled()
     button("Results").click()
     expect(button("Download Comparison")).to_be_disabled()
     evidence.append(
-        "CSV downloaded with matching server bytes. Editing the sensing radius disabled validation and export."
+        "Three real browser downloads matched server files. Moving the station invalidated validation and export."
     )
-    button("Experiments").click()
-    button("Run benchmark").click()
-    expect(page.get_by_role("progressbar")).to_be_visible()
-    expect(page.get_by_label("Benchmark history")).to_be_visible(timeout=90000)
-    assert page.locator("tbody tr").count() == 10
     assert not errors, errors
     evidence.append(
-        "One full benchmark trial returned ten summary rows through the browser. No uncaught page errors."
+        "Two-page navigation, visible settings, and mode-specific Local fraction checked. No uncaught page errors."
     )
     return evidence
 

@@ -3,7 +3,6 @@ import {
   Network,
   Map,
   ChartNoAxesCombined,
-  FlaskConical,
   RadioTower,
   ScanLine,
   Timer,
@@ -16,8 +15,6 @@ import {
   ShieldCheck,
   Activity,
   ChevronDown,
-  Grid2X2,
-  Dna,
   Focus,
 } from "lucide-react";
 import TerrainCanvas from "./TerrainCanvas";
@@ -25,24 +22,25 @@ import { Controls, NumberField } from "./Controls";
 const Results = lazy(() =>
   import("./Results").then((module) => ({ default: module.Results })),
 );
-const BenchTable = lazy(() =>
-  import("./Results").then((module) => ({ default: module.BenchTable })),
-);
 import {
   api,
   legal,
+  baseRect,
+  legalBase,
+  terrainStats,
+  BASE_ID,
   saveFile,
   type Env,
   type Result,
   type Audit,
   type Layers,
   type Limits,
-  type Summary,
 } from "./types";
 
 const initial: Env = {
   size: 40,
   base: [20, 20],
+  base_margin: 0,
   sensing: 5.5,
   communication: 8,
   spacing: 2,
@@ -60,11 +58,11 @@ const legend = [
   ["blue", "Communication radius"],
   ["pink", "Sensing radius"],
 ];
-const paths = ["Environment", "Results", "Experiments"] as const;
+const paths = ["Environment", "Results"] as const;
 type Page = (typeof paths)[number];
 const settingsDefault = {
   seed: 7,
-  budget: 300,
+  budget: 600,
   population: 18,
   generations: 40,
   local_fraction: 0.45,
@@ -89,7 +87,6 @@ export default function App() {
       communication: true,
     });
   const [showLayers, setShowLayers] = useState(false),
-    [cursor, setCursor] = useState("—"),
     [notice, setNotice] = useState("");
   const [before, setBefore] = useState<Env[]>([]),
     [after, setAfter] = useState<Env[]>([]);
@@ -100,16 +97,15 @@ export default function App() {
     [settings, setSettings] = useState(settingsDefault);
   const [results, setResults] = useState<Result[]>([]),
     [index, setIndex] = useState(0),
-    [audits, setAudits] = useState<Audit[]>([]),
-    [fine, setFine] = useState(false);
-  const [format, setFormat] = useState("csv"),
-    [trials, setTrials] = useState(1),
-    [history, setHistory] = useState<{ rows: Summary[]; trials: number }[]>([]),
-    [historyIndex, setHistoryIndex] = useState(0);
+    [audits, setAudits] = useState<Audit[]>([]);
+  const [format, setFormat] = useState("csv");
+  const [preview, setPreview] = useState<Env | null>(null);
   const file = useRef<HTMLInputElement>(null),
     version = useRef(0),
     active = useRef(""),
+    cancelRequested = useRef(false),
     editing = useRef(false);
+  const cursor = useRef<HTMLOutputElement>(null);
   const result = results[index];
   function clearResults() {
     version.current++;
@@ -120,19 +116,23 @@ export default function App() {
   }
   function apply(next: Env) {
     setEnv(next);
+    setPreview(null);
     setCount(next.obstacles.length);
-    select((id) => (next.obstacles.some((r) => r.id === id) ? id : null));
+    select((id) =>
+      id === BASE_ID || next.obstacles.some((r) => r.id === id) ? id : null,
+    );
     clearResults();
   }
   function change(next: Env) {
     if (busy || JSON.stringify(next) === JSON.stringify(env)) return;
     const max = Math.floor(next.size ** 2 / limits.area_per_obstacle);
     if (
+      !legalBase(next, baseRect(next)) ||
       next.obstacles.length > max ||
       next.obstacles.some((r) => !legal(next, r, limits))
     ) {
       setNotice(
-        "This edit would invalidate an obstacle. The previous layout is still active.",
+        "The station or an obstacle would overlap or cross a boundary. The previous layout is still active.",
       );
       return;
     }
@@ -161,6 +161,10 @@ export default function App() {
   }
   async function generate(append: boolean) {
     if (editing.current || busy) return;
+    if (append && terrainStats(env, limits).capacity === 0) {
+      setNotice("No additional obstacle fits the current count or area limit.");
+      return;
+    }
     editing.current = true;
     const stamp = version.current;
     try {
@@ -209,7 +213,6 @@ export default function App() {
       if (
         page !== "Environment" ||
         busy ||
-        !manual ||
         e.repeat ||
         (e.target as HTMLElement).closest(
           "input,textarea,select,[contenteditable=true]",
@@ -222,7 +225,7 @@ export default function App() {
       } else if (e.ctrlKey && e.key.toLowerCase() === "y") {
         e.preventDefault();
         redo();
-      } else if (!e.ctrlKey && e.key.toLowerCase() === "o") {
+      } else if (manual && !e.ctrlKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
         void generate(true);
       }
@@ -231,8 +234,10 @@ export default function App() {
     return () => window.removeEventListener("keydown", key);
   });
   async function run(method: string) {
-    if (busy) return;
-    if (method !== "Benchmark") clearResults();
+    if (busy || editing.current || active.current) return;
+    active.current = "pending";
+    cancelRequested.current = false;
+    clearResults();
     const stamp = version.current;
     setBusy(true);
     setNotice("");
@@ -242,9 +247,9 @@ export default function App() {
         mode: method,
         environment: env,
         settings,
-        trials,
       });
       active.current = id;
+      if (cancelRequested.current) await api("jobs/" + id, undefined, "DELETE");
       while (stamp === version.current) {
         const response = await api("jobs/" + id);
         if (stamp !== version.current) break;
@@ -254,22 +259,14 @@ export default function App() {
         }
         if (response.state === "failed") throw Error(response.error);
         if (response.state === "complete") {
-          if (method === "Benchmark") {
-            setHistory((old) => [
-              { rows: response.result.summary, trials },
-              ...old,
-            ]);
-            setHistoryIndex(0);
-          } else {
-            setResults(response.result);
-            setIndex(0);
-            setJob(id);
-            setNotice(
-              response.result.some((r: Result) => !r.possible)
-                ? "No feasible deployment exists on these candidate sites."
-                : "Run complete. Inspect the layout or validate the solution.",
-            );
-          }
+          setResults(response.result);
+          setIndex(0);
+          setJob(id);
+          setNotice(
+            response.result.some((r: Result) => !r.possible)
+              ? "No feasible deployment exists on these candidate sites."
+              : "Run complete. Inspect the layout or validate the solution.",
+          );
           break;
         }
         if (response.progress) {
@@ -288,7 +285,7 @@ export default function App() {
   async function audit() {
     const stamp = version.current;
     try {
-      const data = await api("jobs/" + job + "/validate?fine=" + fine, env);
+      const data = await api("jobs/" + job + "/validate", env);
       if (stamp === version.current) setAudits(data);
     } catch (e) {
       setNotice(String(e));
@@ -317,7 +314,7 @@ export default function App() {
       setNotice(String(e));
     }
   }
-  const blocked = env.obstacles.reduce((sum, r) => sum + r.w * r.h, 0);
+  const stats = terrainStats(preview ?? env, limits);
   return (
     <>
       <header>
@@ -325,16 +322,19 @@ export default function App() {
           <span className="brandmark">
             <Network size={23} />
           </span>
-          Fieldlab
+          AI Project
         </div>
         <nav>
           {paths.map((name, i) => {
-            const Icon = [Map, ChartNoAxesCombined, FlaskConical][i];
+            const Icon = [Map, ChartNoAxesCombined][i];
             return (
               <button
                 key={name}
                 aria-current={page === name ? "page" : undefined}
-                onClick={() => setPage(name)}
+                onClick={() => {
+                  setPreview(null);
+                  setPage(name);
+                }}
               >
                 <Icon />
                 {name}
@@ -342,10 +342,6 @@ export default function App() {
             );
           })}
         </nav>
-        <span className="engine">
-          <i className={online ? "ok" : ""} />
-          {online ? "Engine online" : "Connecting"}
-        </span>
       </header>
       <main>
         <div className="titlebar">
@@ -353,17 +349,8 @@ export default function App() {
             <h1>
               {page === "Environment"
                 ? "Deployment studio"
-                : page === "Results"
-                  ? "Optimization results"
-                  : "Experiment bench"}
+                : "Optimization results"}
             </h1>
-            <p>
-              {page === "Environment"
-                ? "Optimize wireless sensor placement, coverage, and connectivity."
-                : page === "Results"
-                  ? "Inspect the best deployments found on the current terrain."
-                  : "Compare both algorithms across grid sizes and obstacle layouts."}
-            </p>
           </div>
           {page === "Environment" && (
             <div className="row">
@@ -423,12 +410,13 @@ export default function App() {
             {progress.label}
             <progress value={progress.percent} max="100" />
             <button
-              onClick={() =>
-                active.current &&
-                api("jobs/" + active.current, undefined, "DELETE").catch((e) =>
-                  setNotice(String(e)),
-                )
-              }
+              onClick={() => {
+                cancelRequested.current = true;
+                if (active.current && active.current !== "pending")
+                  api("jobs/" + active.current, undefined, "DELETE").catch(
+                    (e) => setNotice(String(e)),
+                  );
+              }}
             >
               Cancel
             </button>
@@ -441,9 +429,11 @@ export default function App() {
                 <Controls
                   env={env}
                   limits={limits}
+                  capacity={stats.capacity}
                   manual={manual}
                   mode={(v) => {
                     setManual(v);
+                    setPreview(null);
                     select(null);
                   }}
                   selected={selected}
@@ -486,22 +476,20 @@ export default function App() {
                       </button>
                     ))}
                   </div>
-                  <details>
-                    <summary>
-                      <Dna />
-                      Search parameters
-                      <ChevronDown />
-                    </summary>
-                    <div className="two">
-                      {(
-                        [
-                          ["seed", "Algorithm seed", 0, 2147483647],
-                          ["budget", "Evaluation budget", 80, 5000],
-                          ["population", "Population", 4, 80],
-                          ["generations", "Generations", 1, 300],
-                          ["local_fraction", "Local fraction", 0, 1],
-                        ] as const
-                      ).map(([key, label, min, max]) => (
+                  <div className="two">
+                    {(
+                      [
+                        ["seed", "Algorithm seed", 0, 2147483647],
+                        ["budget", "Evaluation budget", 80, 5000],
+                        ["population", "Population", 4, 80],
+                        ["generations", "Generations", 1, 300],
+                        ["local_fraction", "Local fraction", 0, 1],
+                      ] as const
+                    )
+                      .filter(
+                        ([key]) => key !== "local_fraction" || mode !== "GA",
+                      )
+                      .map(([key, label, min, max]) => (
                         <NumberField
                           key={key}
                           label={label}
@@ -512,8 +500,8 @@ export default function App() {
                           set={(n) => setSettings({ ...settings, [key]: n })}
                         />
                       ))}
-                    </div>
-                  </details>
+                  </div>
+
                   <button
                     className="wide primary"
                     disabled={busy || !online}
@@ -632,18 +620,19 @@ export default function App() {
                   env={env}
                   result={result}
                   layers={layers}
-                  manual={manual && !busy}
+                  manual={manual}
+                  locked={busy}
+                  previewGeometry={setPreview}
                   selected={selected}
                   select={select}
                   commit={change}
                   limits={limits}
-                  onCursor={setCursor}
+                  onCursor={(value) => {
+                    if (cursor.current) cursor.current.value = value;
+                  }}
                 />
                 <div className="map-foot">
-                  <span>
-                    <Grid2X2 />
-                    {env.size ** 2 - blocked} monitoring points
-                  </span>
+                  <span>Grid coordinates</span>
                   <span>
                     {result
                       ? result.algorithm +
@@ -654,9 +643,28 @@ export default function App() {
                   </span>
                   <span>
                     <Focus />
-                    {cursor}
+                    <output ref={cursor}>—</output>
                   </span>
                 </div>
+                <dl className="terrain-stats">
+                  {Object.entries({
+                    "Grid size": env.size + " × " + env.size,
+                    "Total cells": stats.cells,
+                    "Blocked cells": stats.area,
+                    "Monitoring sites": stats.total,
+                    "Blocked sites": stats.blocked,
+                    "Available monitoring points": stats.available,
+                    "Blocked area":
+                      ((100 * stats.area) / stats.cells).toFixed(2) + "%",
+                    Obstacles: env.obstacles.length,
+                    "Additional obstacles allowed": stats.capacity,
+                  }).map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
                 <div className="legend">
                   {legend.map(([symbol, label]) => (
                     <span key={symbol}>
@@ -679,44 +687,35 @@ export default function App() {
                   </p>
                 </div>
                 <div className="row">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={fine}
-                      onChange={(e) => {
-                        setFine(e.target.checked);
-                        setAudits([]);
-                      }}
-                    />
-                    Fine sampling
-                  </label>
-                  <button disabled={!job || busy} onClick={audit}>
+                  <button disabled={!job || busy || !!preview} onClick={audit}>
                     Validate Solution
                   </button>
                 </div>
-                {audits.length > 0 && (
+                {!preview && audits.length > 0 && (
                   <div className="audit">
                     {audits.map((a, i) => (
                       <div key={i}>
                         <strong>
                           {results[i]?.algorithm} · {a.passed ? "PASS" : "FAIL"}
                         </strong>{" "}
-                        · Coverage {a.coverage.toFixed(2)}% · Connected{" "}
-                        {a.connectivity.toFixed(2)}% · Coordinates{" "}
-                        {a.checks["Unique legal coordinates"]
-                          ? "valid"
-                          : "invalid"}
+                        · Coverage {a.coverage.toFixed(2)}% · Connectivity{" "}
+                        {a.connectivity.toFixed(2)}%
                         {Object.entries(a.checks)
-                          .filter(([, ok]) => !ok)
-                          .map(([k]) => (
-                            <div key={k}>{k} failed</div>
+                          .filter(
+                            ([key, ok]) =>
+                              !ok ||
+                              [
+                                "Environment integrity",
+                                "Unique legal coordinates",
+                                "All monitoring points covered",
+                                "Every sensor can route to base",
+                              ].includes(key),
+                          )
+                          .map(([k, ok]) => (
+                            <div key={k}>
+                              {k} · {ok ? "PASS" : "FAIL"}
+                            </div>
                           ))}
-                        {a.fine && (
-                          <div>
-                            Fine samples covered {a.fine.covered}/{a.fine.total}{" "}
-                            ({a.fine.percent.toFixed(2)}%)
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -735,63 +734,7 @@ export default function App() {
             />
           </Suspense>
         )}
-        {page === "Experiments" && (
-          <section className="panel report">
-            <h2>
-              <FlaskConical />
-              Paired benchmark
-            </h2>
-            <p>
-              Run both methods on five saved scenario recipes. Each trial uses
-              the same terrain, algorithm seed, and budget of 100 evaluations.
-            </p>
-            <div className="row">
-              <NumberField
-                label="Trials per scenario"
-                value={trials}
-                min={1}
-                max={10}
-                set={setTrials}
-              />
-              <button
-                className="primary"
-                disabled={busy || !online}
-                onClick={() => run("Benchmark")}
-              >
-                <Play />
-                Run benchmark
-              </button>
-            </div>
-            {history.length > 0 && (
-              <>
-                <h3>Experiment history</h3>
-                <select
-                  aria-label="Benchmark history"
-                  value={historyIndex}
-                  onChange={(e) => setHistoryIndex(+e.target.value)}
-                >
-                  {history.map((h, i) => (
-                    <option key={i} value={i}>
-                      Run {history.length - i} · {h.trials} trial(s) per
-                      scenario
-                    </option>
-                  ))}
-                </select>
-                <Suspense fallback={<p>Loading table…</p>}>
-                  <BenchTable rows={history[historyIndex].rows} />
-                </Suspense>
-              </>
-            )}
-          </section>
-        )}
       </main>
-      <footer>
-        <span>
-          <Network />
-          Fieldlab
-        </span>
-        Wireless sensor network optimization
-      </footer>
     </>
   );
 }

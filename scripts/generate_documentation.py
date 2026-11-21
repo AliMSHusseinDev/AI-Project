@@ -58,7 +58,7 @@ def main():
                 [
                     ["Input or rule", "Required output or behavior"],
                     [
-                        "Grid, obstacles, base, two radii, candidate spacing",
+                        "Grid, obstacles, base, two radii, site spacing",
                         "Show the terrain. Reject invalid geometry. Keep it fixed during a run.",
                     ],
                     [
@@ -67,7 +67,7 @@ def main():
                     ],
                     [
                         "Full coverage and routes",
-                        "Check every free cell center and every sensor. Show failures.",
+                        "Check every unblocked lattice site and every sensor. Show failures.",
                     ],
                     [
                         "Interactive work and repeated tests",
@@ -81,7 +81,7 @@ def main():
                 "Let S be the set of active sites. Minimize its size |S|. A point is covered when its Euclidean distance to a sensor is at most the sensing radius and their segment is clear. Distance is the square root of (change in x squared + change in y squared)."
             ),
             p(
-                "Join two radios when distance is within communication range and the segment is clear. Every active sensor must be reachable from the base in this graph. The base is a radio node only. Free cell centers include the base cell."
+                "Join two radios when distance is within communication range and the segment is clear. Every active sensor must be reachable from the base in this graph. The base is a radio node only. The station footprint reserves sensor space. Its center is the radio endpoint. Lattice points beneath it still need coverage."
             ),
             h("Level 0 data flow diagram"),
             dfd(),
@@ -96,23 +96,23 @@ def main():
         "Using the deployment studio",
         [
             p(
-                "Load a saved environment or set the grid size, base, radii, spacing and seed. The count limit grows with grid area. Generate obstacles applies the current count and seed."
+                "Load a saved environment or set the grid size, base, radii, spacing and seed. The map counts sampled sites and blocked cells separately. Additional obstacles must fit the count cap, remaining area budget and free cells outside the station. Generate obstacles applies the current count and seed."
             ),
             h("Edit the terrain"),
             p(
-                "In Manual mode press O to add one block. Click a block and drag to move it. Hover over the selected block and press R. Drag a corner to resize it. Use Delete, Ctrl+Z and Ctrl+Y to delete, undo and redo. A blocked move stops at the last legal cell."
+                "In Manual mode press O to add one block. Click a block and drag to move it. Hover over the selected block and press R. Drag a corner to resize it. Use Delete, Ctrl+Z and Ctrl+Y to delete, undo and redo. Drag the station in either mode. Select it, hover and press R to resize its square around the center. Undo and redo include station edits."
             ),
             h("Run and inspect"),
             p(
-                "Select GA, MA or Comparison and run it. The four cards show count, coverage, reachable sensors and time. In a comparison, switch the map between methods. Blue circles show radio range. Red circles show sensing range. Links show actual clear paths. Layers only change the drawing."
+                "Set population, generations, evaluation budget and algorithm seed. MA and Comparison also show Local fraction. Select the method and run it. The four cards show count, coverage, reachable sensors and time. In a comparison, switch the map between methods. Blue circles show radio range. Red circles show sensing range. Links show actual clear paths. Layers only change the drawing."
             ),
             p(
-                "Validate Solution rechecks the current layouts. Fine sampling tests four extra points per free cell. Edits clear old results. Save environment stores a JSON layout. Load checks it before use."
+                "Validate Solution rechecks the current layouts. It checks full lattice coverage, routes, legal sensor positions and valid terrain. Edits clear old results. Save environment stores a JSON layout. Load checks it before use."
             ),
             h("Use case diagram"),
             use_cases(),
             p(
-                "The lines show actions available to the student. In Results, select CSV, PDF or PNG and click Download Comparison. PNG contains the table only. Experiments runs paired trials and keeps their summaries for the current browser session."
+                "The lines show actions available to the student. In Results, select CSV, PDF or PNG and click Download Comparison. PNG contains the table only. Repeat the five setups in the Assessment report using the same Comparison button. Additional benchmarks run from the command line."
             ),
         ],
     )
@@ -129,7 +129,7 @@ def main():
                     [
                         "Cooja",
                         "Simulates sensor networks. MSPSim can emulate an MSP430 sensor platform.",
-                        "Cooja studies platform and network behavior. Fieldlab selects sensor sites under coverage and route constraints.",
+                        "Cooja studies platform and network behavior. AI Project selects sensor sites under coverage and route constraints.",
                     ],
                     [
                         "ns-3",
@@ -139,7 +139,7 @@ def main():
                     [
                         "PySensors",
                         "Selects a sparse set of measurement sites. Both tools seek useful readings with fewer sensors.",
-                        "PySensors uses data patterns for reconstruction or classification. Fieldlab checks grid coverage and radio paths.",
+                        "PySensors uses data patterns for reconstruction or classification. AI Project checks grid coverage and radio paths.",
                     ],
                 ],
                 [81, 192, 217],
@@ -195,11 +195,11 @@ def main():
             ),
             h("Coordinate rules"),
             p(
-                "Rows grow down from zero. Columns grow right. A monitoring point sits at each free cell center. Sites are free points whose two coordinates are multiples of the spacing. The base is excluded from candidate sites. The scenario files use spacing 2, sensing radius 5.5 and radio radius 8."
+                "Rows grow down from zero. Columns grow right. Both coordinates of each monitoring site are multiples of the spacing. Only obstacle-free sites need coverage. The station footprint also excludes sensor placement. Its side is 1 + 2 times base_margin. Older files default to one cell. The scenario files use spacing 2, sensing radius 5.5 and radio radius 8."
             ),
             h("Generation"),
             p(
-                "The generator draws rectangle sizes and positions from a local random generator. It checks overlap, base clearance, area, count and boundaries. It reserves space in the area budget for later blocks and keeps a free exit beside the base. The generation seed is 42 in all five files."
+                "The generator draws rectangle sizes and positions from a local random generator. It checks overlap, base clearance, area, count and boundaries. It reserves space in the area budget for later blocks and rejects any overlap with the station footprint. The generation seed is 42 in all five files."
             ),
             h("Validation and replay"),
             p(
@@ -236,13 +236,13 @@ def main():
             ),
             h("Independent check"),
             p(
-                "A second module checks paths using a separating-axis test, then follows links with a depth-first walk. It checks the reported coordinates, counts, holes, reachability and percentages. Full grid coverage means all defined points were covered. Fine sampling is an extra check."
+                "A second module checks paths using a separating-axis test, then follows links with a depth-first walk. It checks the reported coordinates, counts, holes, reachability and percentages. Full grid coverage means all defined points were covered. The report also checks that the current terrain is valid."
             ),
             PageBreak(),
             h("Genetic algorithm"),
             flow(False),
             p(
-                "Stop at the last generation, at the score budget, or when the candidate model is proved infeasible. Record the best cost after each generation, including the final partial generation."
+                "Stop at the last generation, at the score budget, or when the candidate model is proved infeasible. Record the best cost after each generation, including the last partial batch. Only full generations count as completed. Results state the stop reason and the number of distinct scores actually computed."
             ),
             PageBreak(),
             h("Memetic algorithm"),
@@ -262,7 +262,7 @@ def main():
             h("Convergence on scale40, seed 100"),
             convergence(DATA["records"]),
             p(
-                "The seed already gives a feasible layout here. Each drop removes sensors while keeping both constraints. MA had a lower mean count on scale20. GA had a lower mean on the four other recipes. MA spent part of its budget scoring local moves. These five terrains and short budgets limit how far the result can be generalized."
+                "The seed already gives a feasible layout here. Each drop removes sensors while keeping both constraints. GA had a lower mean count on all five supplemental recipes at this budget. See Assessment for the separate five GUI comparisons at a cap of 600. MA spent part of its budget scoring local moves. These five terrains and short budgets limit how far the result can be generalized."
             ),
         ],
     )
@@ -271,7 +271,7 @@ def main():
         "Development platform",
         [
             p(
-                "Python 3.12 runs every search and every final check. A separate browser interface lets a student edit a map and watch progress while Python works."
+                "Python 3.12 runs every search and every final check. The browser has Environment and Results views. It shows map edits and run progress while Python works."
             ),
             h("System architecture"),
             architecture(),

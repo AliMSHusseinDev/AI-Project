@@ -11,7 +11,7 @@ from .validation import validate
 class Settings(Model):
     population: int = Field(default=18, ge=4, le=80)
     generations: int = Field(default=40, ge=1, le=300)
-    budget: int = Field(default=300, ge=80, le=5000)
+    budget: int = Field(default=600, ge=80, le=5000)
     seed: int = Field(default=7, ge=0, le=2147483647)
     local_fraction: float = Field(default=0.45, ge=0, le=1)
 
@@ -175,6 +175,13 @@ def optimize(
             children.append(child)
         population = children
         best = min(children, key=lambda child: evaluator.evaluate(child).cost)
+    completed = generation - int(len(population) < settings.population)
+    if not possible:
+        termination = "Infeasible terrain"
+    elif len(evaluator.cache) >= settings.budget:
+        termination = "Evaluation budget"
+    else:
+        termination = "Generation limit"
     score = evaluator.evaluate(best)
     connected, islands = terrain.components(best)
     mask = terrain.covered(best)
@@ -198,7 +205,8 @@ def optimize(
         initial_count=len(initial),
         monitoring_count=len(terrain.points),
         cost=score.cost,
-        generations=generation,
+        generations=completed,
+        termination=termination,
         evaluations=len(evaluator.cache),
         history=history,
         local=local,

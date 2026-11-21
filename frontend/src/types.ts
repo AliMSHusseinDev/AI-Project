@@ -3,6 +3,7 @@ export type Rect = { id: string; x: number; y: number; w: number; h: number };
 export type Env = {
   size: number;
   base: Point;
+  base_margin: number;
   sensing: number;
   communication: number;
   spacing: number;
@@ -21,7 +22,6 @@ export type Audit = {
   checks: Record<string, boolean>;
   coverage: number;
   connectivity: number;
-  fine?: { covered: number; total: number; percent: number };
 };
 export type Result = {
   algorithm: string;
@@ -37,21 +37,10 @@ export type Result = {
   seconds: number;
   cost: number;
   evaluations: number;
+  generations: number;
+  termination: string;
   history: { generation: number; evaluations: number; cost: number }[];
   local: { attempts: number; improvements: number; evaluations: number };
-};
-export type Summary = {
-  case: string;
-  algorithm: string;
-  runs: number;
-  valid: number;
-  best: number | null;
-  mean: number | null;
-  sd: number | null;
-  seconds: number;
-  coverage: number;
-  connectivity: number;
-  evaluations: number;
 };
 export type Limits = {
   area_per_obstacle: number;
@@ -60,6 +49,54 @@ export type Limits = {
 };
 export const contains = (r: Rect, x: number, y: number) =>
   x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+// Empty IDs cannot occur in a validated obstacle file.
+export const BASE_ID = "";
+export function baseRect(e: Env): Rect {
+  const margin = e.base_margin;
+  return {
+    id: BASE_ID,
+    x: e.base[0] - margin,
+    y: e.base[1] - margin,
+    w: 2 * margin + 1,
+    h: 2 * margin + 1,
+  };
+}
+export const overlaps = (a: Rect, b: Rect) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+export function legalBase(e: Env, r: Rect) {
+  return (
+    r.x >= 0 &&
+    r.y >= 0 &&
+    r.x + r.w <= e.size &&
+    r.y + r.h <= e.size &&
+    r.w === r.h &&
+    r.w >= 1 &&
+    r.w <= 11 &&
+    r.w % 2 === 1 &&
+    !e.obstacles.some((o) => overlaps(o, r))
+  );
+}
+export function terrainStats(e: Env, limits: Limits) {
+  const cells = e.size ** 2,
+    total = Math.ceil(e.size / e.spacing) ** 2;
+  let area = 0,
+    blocked = 0;
+  function samples(start: number, length: number) {
+    return (
+      Math.ceil((start + length) / e.spacing) - Math.ceil(start / e.spacing)
+    );
+  }
+  for (const r of e.obstacles) {
+    area += r.w * r.h;
+    blocked += samples(r.x, r.w) * samples(r.y, r.h);
+  }
+  const capacity = Math.min(
+    Math.floor(cells / limits.area_per_obstacle) - e.obstacles.length,
+    Math.floor((cells * limits.blocked_percent) / 100) - area,
+    cells - area - baseRect(e).w ** 2,
+  );
+  return { cells, total, area, blocked, available: total - blocked, capacity };
+}
 export function legal(e: Env, r: Rect, limits: Limits) {
   const others = e.obstacles.filter((o) => o.id !== r.id);
   return (
@@ -70,14 +107,8 @@ export function legal(e: Env, r: Rect, limits: Limits) {
     Math.max(r.w, r.h) <= limits.max_side &&
     r.x + r.w <= e.size &&
     r.y + r.h <= e.size &&
-    !contains(r, ...e.base) &&
-    !others.some(
-      (o) =>
-        r.x < o.x + o.w &&
-        o.x < r.x + r.w &&
-        r.y < o.y + o.h &&
-        o.y < r.y + r.h,
-    ) &&
+    !overlaps(r, baseRect(e)) &&
+    !others.some((o) => overlaps(o, r)) &&
     100 * (others.reduce((sum, o) => sum + o.w * o.h, 0) + r.w * r.h) <=
       limits.blocked_percent * e.size ** 2
   );

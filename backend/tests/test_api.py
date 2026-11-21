@@ -37,7 +37,7 @@ def test_comparison_validation_and_selective_exports(tmp_path, monkeypatch):
         path = f"/api/jobs/{key}"
         assert all(
             row["passed"]
-            for row in client.post(path + "/validate?fine=true", json=env).json()
+            for row in client.post(path + "/validate", json=env).json()
         )
         assert (
             client.post(path + "/export/csv", json=env | {"seed": 3}).status_code == 409
@@ -49,7 +49,7 @@ def test_comparison_validation_and_selective_exports(tmp_path, monkeypatch):
             file = tmp_path / exports.FILES[kind][0]
             assert data == file.read_bytes() and len(list(tmp_path.iterdir())) == 1
             if kind == "png":
-                assert Image.open(io.BytesIO(data)).size == (1120, 720)
+                assert Image.open(io.BytesIO(data)).size == (1120, 864)
             elif kind == "csv":
                 rows = list(csv.reader(io.StringIO(data.decode())))
                 assert (

@@ -26,6 +26,8 @@ def comparison_rows(results):
             len(r["unreachable"]),
             round(r["seconds"], 4),
             r["evaluations"],
+            r["generations"],
+            r["termination"],
             r["cost"],
             r["local"]["improvements"] if r["algorithm"] == "MA" else "—",
         ]
@@ -37,7 +39,9 @@ def comparison_rows(results):
         "Connectivity (%)",
         "Disconnected sensors",
         "Execution time (s)",
-        "Fitness evaluations",
+        "Unique fitness evaluations",
+        "Generations completed",
+        "Termination reason",
         "Best cost",
         "MA local improvements",
     ]
@@ -65,11 +69,11 @@ def export(results, format, directory=None):
         buffer.write(table.getvalue().encode("utf-8"))
     elif format == "pdf":
         styles = getSampleStyleSheet()
-        table = Table(rows, colWidths=[235, 96, 96], rowHeights=28)
+        table = Table(rows, colWidths=[197, 115, 115], rowHeights=28)
         table.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#174d48")),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#254d83")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                     (
                         "ROWBACKGROUNDS",
@@ -98,10 +102,10 @@ def export(results, format, directory=None):
         for index, row in enumerate(rows):
             top = index * 72
             color = (
-                "#174d48" if index == 0 else ("#edf5f2" if index % 2 == 0 else "white")
+                "#254d83" if index == 0 else ("#edf5f2" if index % 2 == 0 else "white")
             )
             draw.rectangle((0, top, 1120, top + 71), fill=color)
-            for left, value in zip((28, 620, 870), row):
+            for left, value in zip((25, 450, 785), row):
                 draw.text(
                     (left, top + 17),
                     str(value),

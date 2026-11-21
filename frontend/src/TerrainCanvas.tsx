@@ -2,6 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   contains,
   legal,
+  baseRect,
+  BASE_ID,
+  legalBase,
   type Env,
   type Rect,
   type Result,
@@ -14,6 +17,8 @@ type Props = {
   result?: Result;
   layers: Layers;
   manual: boolean;
+  locked: boolean;
+  previewGeometry: (e: Env | null) => void;
   selected: string | null;
   select: (id: string | null) => void;
   commit: (e: Env) => void;
@@ -32,6 +37,8 @@ export default function TerrainCanvas({
   result,
   layers,
   manual,
+  locked,
+  previewGeometry,
   selected,
   select,
   commit,
@@ -63,11 +70,14 @@ export default function TerrainCanvas({
         (event.target as HTMLElement).closest(
           "input,textarea,select,[contenteditable=true]",
         ) ||
-        !manual ||
+        locked ||
         event.repeat
       )
         return;
-      const rect = env.obstacles.find((r) => r.id === selected),
+      const rect =
+          selected === BASE_ID
+            ? baseRect(env)
+            : env.obstacles.find((r) => r.id === selected),
         point = hover.current;
       if (
         event.key.toLowerCase() === "r" &&
@@ -83,7 +93,7 @@ export default function TerrainCanvas({
     }
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [env, manual, selected, select]);
+  }, [env, locked, selected, select]);
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(() => {
       const node = canvas.current!,
@@ -151,12 +161,12 @@ export default function TerrainCanvas({
       ctx.beginPath();
       ctx.rect(left, top, side, side);
       ctx.clip();
-      if (result) {
+      if (result && !preview) {
         const holes = new Set(result.holes.map((p) => p.join(","))),
           unreachable = new Set(result.unreachable.map((p) => p.join(",")));
         if (layers.points || layers.holes)
-          for (let y = 0; y < env.size; y++)
-            for (let x = 0; x < env.size; x++) {
+          for (let y = 0; y < env.size; y += env.spacing)
+            for (let x = 0; x < env.size; x += env.spacing) {
               const hole = holes.has(x + "," + y);
               if (
                 (hole ? layers.holes : layers.points) &&
@@ -223,14 +233,29 @@ export default function TerrainCanvas({
               ctx.strokeRect(x + dx * w - 3, y + dy * h - 3, 6, 6);
             }
       }
-      const [bx, by] = env.base;
-      circle(bx, by, 12, "#7457ac20");
+      const station = preview?.id === BASE_ID ? preview : baseRect(env);
+      const sx = left + station.x * scale,
+        sy = top + station.y * scale,
+        sw = station.w * scale;
+      ctx.fillStyle = "#795ab840";
+      ctx.fillRect(sx, sy, sw, sw);
+      ctx.strokeStyle = selected === BASE_ID ? "#cf8115" : "#8062a2";
+      ctx.lineWidth = selected === BASE_ID ? 3 : 1;
+      ctx.strokeRect(sx, sy, sw, sw);
       ctx.save();
-      ctx.translate(cx(bx), cy(by));
+      ctx.translate(sx + sw / 2, sy + sw / 2);
       ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = "#71529b";
-      ctx.fillRect(-5, -5, 10, 10);
+      ctx.fillStyle = "#68468b";
+      const mark = Math.min(sw * 0.48, 10);
+      ctx.fillRect(-mark / 2, -mark / 2, mark, mark);
       ctx.restore();
+      if (resize && selected === BASE_ID)
+        for (const dx of [0, 1])
+          for (const dy of [0, 1]) {
+            ctx.fillStyle = "white";
+            ctx.fillRect(sx + dx * sw - 3, sy + dy * sw - 3, 6, 6);
+            ctx.strokeRect(sx + dx * sw - 3, sy + dy * sw - 3, 6, 6);
+          }
       ctx.restore();
     });
     return () => cancelAnimationFrame(frame);
@@ -244,12 +269,18 @@ export default function TerrainCanvas({
     ];
   }
   function down(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!manual || event.button !== 0) return;
+    if (locked || event.button !== 0) return;
     const p = coordinates(event);
-    let rect = env.obstacles.find((r) => contains(r, p[0], p[1]));
+    let rect = manual
+      ? env.obstacles.find((r) => contains(r, p[0], p[1]))
+      : undefined;
+    if (contains(baseRect(env), p[0], p[1])) rect = baseRect(env);
     let handle: number[] | null = null;
     if (resize) {
-      const selectedRect = env.obstacles.find((r) => r.id === selected);
+      const selectedRect =
+        selected === BASE_ID
+          ? baseRect(env)
+          : env.obstacles.find((r) => r.id === selected);
       if (selectedRect)
         for (const dx of [0, 1])
           for (const dy of [0, 1]) {
@@ -288,6 +319,23 @@ export default function TerrainCanvas({
     const edit = drag.current;
     if (!edit || event.pointerId !== edit.pointer) return;
     const delta = p.map((v, i) => Math.round(v - edit.start[i]));
+    if (edit.original.id === BASE_ID && edit.handle) {
+      const dx = delta[0] * (edit.handle[0] ? 1 : -1),
+        dy = delta[1] * (edit.handle[1] ? 1 : -1);
+      const wanted = Math.min(
+        5,
+        Math.max(0, env.base_margin + (Math.abs(dx) >= Math.abs(dy) ? dx : dy)),
+      );
+      const step = Math.sign(wanted - (edit.current.w - 1) / 2);
+      while ((edit.current.w - 1) / 2 !== wanted) {
+        const margin = (edit.current.w - 1) / 2 + step;
+        const next = baseRect({ ...env, base_margin: margin });
+        if (!legalBase(env, next)) break;
+        edit.current = next;
+      }
+      showPreview(edit.current);
+      return;
+    }
     const wanted = { ...edit.original };
     if (edit.handle) {
       if (edit.handle[0] === 0) {
@@ -313,25 +361,44 @@ export default function TerrainCanvas({
         const next = { ...current };
         next[field] += step;
         if (edit.handle?.[axis] === 0) next[pos] -= step;
-        if (!legal(env, next, limits)) break;
+        if (
+          !(next.id === BASE_ID
+            ? legalBase(env, next)
+            : legal(env, next, limits))
+        )
+          break;
         current = next;
       }
     }
     edit.current = current;
-    setPreview(current);
+    showPreview(current);
+  }
+  function editedEnvironment(rect: Rect): Env {
+    if (rect.id === BASE_ID) {
+      const margin = (rect.w - 1) / 2;
+      return {
+        ...env,
+        base: [rect.x + margin, rect.y + margin],
+        base_margin: margin,
+      };
+    }
+    return {
+      ...env,
+      obstacles: env.obstacles.map((r) => (r.id === rect.id ? rect : r)),
+    };
+  }
+  function showPreview(rect: Rect) {
+    setPreview(rect);
+    previewGeometry(editedEnvironment(rect));
   }
   function finish(event: React.PointerEvent, accept: boolean) {
     const edit = drag.current;
     if (!edit || event.pointerId !== edit.pointer) return;
     drag.current = null;
     setPreview(null);
+    previewGeometry(null);
     if (accept && edit.current !== edit.original)
-      commit({
-        ...env,
-        obstacles: env.obstacles.map((r) =>
-          r.id === edit.original.id ? edit.current : r,
-        ),
-      });
+      commit(editedEnvironment(edit.current));
   }
   return (
     <div className="map-surface">

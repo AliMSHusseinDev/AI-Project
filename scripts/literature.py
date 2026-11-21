@@ -13,7 +13,7 @@ PAPERS = [
         "Where should a small set of sensors go if the aim is to recover a signal or tell classes apart? A sensor may be costly. The number of possible sets grows fast.",
         "The authors reduce the data to a smaller set of patterns. They select measurement sites using these patterns. Different routines support signal recovery and classification.",
         "One package brings the two tasks together. Its examples reproduce earlier placement studies. Users can vary the sensor count and the data basis and check the effect on prediction.",
-        "Both projects choose a subset of sites. The definition of a good subset changes the answer. PySensors scores information from measurements. Fieldlab needs every free cell to be visible and every radio to have a route. Our GA and MA therefore score both conditions.",
+        "Both projects choose a subset of sites. The definition of a good subset changes the answer. PySensors scores information from measurements. AI Project needs every available monitoring site to be visible and every radio to have a route. Our GA and MA therefore score both conditions.",
     ),
     (
         "00032",
@@ -23,7 +23,7 @@ PAPERS = [
         "A viewshed is the area visible from one point. A yes or no answer for one view gives little detail about how a whole landscape links observation sites.",
         "The plug-in runs repeated viewshed calculations on elevation data. It can measure how far a place lies below the visible horizon and map sites that can see one another.",
         "The paper shows a network of sites joined by visibility. It also describes support for repeated views from many points. Figure 1 is an example of the network output.",
-        "This explains why a range circle alone is too broad. Fieldlab also checks a path between endpoints. Here the blockers are flat rectangles. We store clear paths for repeated GA and MA scores.",
+        "This explains why a range circle alone is too broad. AI Project also checks a path between endpoints. Here the blockers are flat rectangles. We store clear paths for repeated GA and MA scores.",
     ),
     (
         "06915",
@@ -33,7 +33,7 @@ PAPERS = [
         "How can researchers test radio paths and adjust a small scene without an expensive closed simulator?",
         "The authors implement two-dimensional ray tracing in Python with JAX. Their methods trace paths and can compute how a result changes as scene parameters move.",
         "Figure 2 shows received power for single-reflection paths around a reflecting surface. The paper also reports visible edge noise from the path search. Reflected signals can reach places without a direct path.",
-        "Fieldlab assumes a blocked direct path gives no radio link. This paper gives a concrete limit of that assumption. Its reflection model would change which relays GA or MA needs.",
+        "AI Project assumes a blocked direct path gives no radio link. This paper gives a concrete limit of that assumption. Its reflection model would change which relays GA or MA needs.",
     ),
     (
         "07322",
@@ -63,7 +63,7 @@ PAPERS = [
         "Remote environmental sensors produce measurements and logs. Maintaining their software in the field is costly.",
         "Ivy provides a reusable design for software on sensor nodes. A team adds code for its own hardware. Nodes can receive configuration and software changes remotely.",
         "The paper presents the design after several iterations of field networks. The authors describe a project with 20 autonomous greenhouse-gas nodes. The contribution is a reusable acquisition design.",
-        "A sensor has value only if its data reaches a collector. This motivates Fieldlab's route check. Fieldlab searches for placement and relays. Ivy describes the software that runs after deployment.",
+        "A sensor has value only if its data reaches a collector. This motivates AI Project's route check. AI Project searches for placement and relays. Ivy describes the software that runs after deployment.",
     ),
 ]
 

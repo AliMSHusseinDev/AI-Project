@@ -50,6 +50,7 @@ def benchmark(trials=10, progress=lambda *args: None):
                         "seconds",
                         "evaluations",
                         "generations",
+                        "termination",
                         "initial_count",
                         "cost",
                         "history",

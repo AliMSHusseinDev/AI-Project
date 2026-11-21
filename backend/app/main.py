@@ -94,7 +94,7 @@ async def lifespan(app):
             (Path(root) / key / "cancel").touch()
 
 
-app = FastAPI(title="Fieldlab", lifespan=lifespan)
+app = FastAPI(title="AI Project", lifespan=lifespan)
 lock = Lock()
 
 
@@ -184,8 +184,8 @@ def current_results(key, environment):
 
 
 @app.post("/api/jobs/{key}/validate")
-def audit(key: str, environment: Environment, fine: bool = False):
-    return [validate(environment, r, fine) for r in current_results(key, environment)]
+def audit(key: str, environment: Environment):
+    return [validate(environment, r) for r in current_results(key, environment)]
 
 
 @app.post("/api/jobs/{key}/export/{format}")

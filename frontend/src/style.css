@@ -1,12 +1,12 @@
 :root {
   font-family: "DM Sans", sans-serif;
   color: #1d322f;
-  background: #f4f6f4;
+  background: #f1f5fa;
   font-synthesis: none;
   font-size: 14px;
-  --teal: #19654e;
+  --teal: #255fa6;
   --muted: #657872;
-  --line: #dce3de;
+  --line: #d9e2eb;
 }
 * {
   box-sizing: border-box;
@@ -47,17 +47,17 @@ button:disabled {
   cursor: default;
 }
 button.primary {
-  background: #17674e;
+  background: #245fa7;
   color: white;
-  border-color: #17674e;
+  border-color: #245fa7;
 }
 button.primary:hover:not(:disabled) {
-  background: #10553f;
+  background: #194b88;
 }
 button.soft {
-  background: #edf4ed;
-  color: #1b5e47;
-  border-color: #c9ddce;
+  background: #edf4fd;
+  color: #285b94;
+  border-color: #c9dae9;
 }
 button:focus-visible,
 input:focus-visible,
@@ -78,7 +78,7 @@ header {
   align-items: center;
   gap: 48px;
   padding: 0 max(30px, calc((100% - 1530px) / 2));
-  background: #153d34;
+  background: #183857;
   color: #fff;
 }
 .brand,
@@ -110,8 +110,8 @@ footer span {
   width: 35px;
   height: 35px;
   border-radius: 10px;
-  background: #d8ecaa;
-  color: #164b39;
+  background: #c9e0ff;
+  color: #234a78;
   justify-content: center;
 }
 .brandmark svg {
@@ -152,8 +152,8 @@ nav button {
 nav button[aria-current="page"],
 nav button:hover:not(:disabled) {
   color: white;
-  background: #214b40;
-  border-bottom-color: #b6d991;
+  background: #244c72;
+  border-bottom-color: #95bff2;
 }
 main {
   max-width: 1580px;
@@ -463,8 +463,8 @@ aside,
 .map-surface {
   position: relative;
   height: clamp(340px, 49vh, 590px);
-  background-color: #f1f5ef;
-  background-image: radial-gradient(#c6d4c8 0.75px, transparent 0.85px);
+  background-color: #f0f4f8;
+  background-image: radial-gradient(#d6dee7 0.75px, transparent 0.85px);
   background-size: 8px 8px;
   border-block: 1px solid var(--line);
 }
@@ -752,4 +752,45 @@ footer svg {
   .report {
     padding: 14px;
   }
+}
+
+.map-surface {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.12;
+  max-height: 85vh;
+  min-height: 320px;
+}
+.map-surface canvas {
+  position: absolute;
+  inset: 0;
+}
+.terrain-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 14px;
+  padding: 14px 18px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.terrain-stats dt {
+  font-size: 11px;
+  color: #54677c;
+}
+.terrain-stats dd {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+.control-body .two + .primary {
+  margin-top: 14px;
+}
+@media (max-width: 760px) {
+  .terrain-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.num-field input {
+  margin-top: auto;
 }

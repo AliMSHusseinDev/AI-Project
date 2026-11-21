@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from statistics import mean, stdev
 from backend.app.benchmarks import CASES, scenario
+from backend.app.environment import Environment, generate
 from backend.app.evolution import Settings, optimize
 from backend.app.validation import validate
 
@@ -55,6 +56,34 @@ def check(replay=False):
                         record["seed"],
                         key,
                     )
+    gui_runs = json.loads((evidence / "assessment_runs.json").read_text())
+    designs = [(20, 0), (20, 2), (40, 0), (40, 8), (60, 18)]
+    assert len(gui_runs) == len(designs)
+    for entry, (size, count) in zip(gui_runs, designs, strict=True):
+        env = generate(
+            Environment(size=size, base=(size // 2, size // 2), seed=42), count
+        )
+        assert entry["environment"] == env.model_dump(mode="json")
+        for result, audit in zip(entry["results"], entry["validation"], strict=True):
+            assert validate(env, result) == audit == result["audit"]
+            assert (
+                audit["passed"]
+                and result["settings"] == Settings(budget=600).model_dump()
+            )
+            assert result["evaluations"] <= 600
+            if replay:
+                replayed = optimize(
+                    env, Settings(**result["settings"]), result["algorithm"]
+                )
+                for key in (
+                    "positions",
+                    "history",
+                    "generations",
+                    "evaluations",
+                    "termination",
+                    "local",
+                ):
+                    assert json.loads(json.dumps(replayed[key])) == result[key]
     with (evidence / "summary.csv").open() as stream:
         csv_rows = list(csv.DictReader(stream))
     for summary, csv_row in zip(data["summary"], csv_rows, strict=True):
@@ -90,11 +119,11 @@ def check(replay=False):
     ]:
         assert path.read_bytes().startswith(b"%PDF"), path
     print(
-        f"Verified 100 deployment audits, 50 pairs, 10 statistical summaries, {suite.attrib['tests']} test records, browser evidence and 14 PDFs."
+        f"Verified five GUI comparisons and 50 supplemental pairs, 10 statistical summaries, {suite.attrib['tests']} test records, browser evidence and 14 PDFs."
     )
     if replay:
         print(
-            "All 100 seeded searches reproduced their recorded coordinates, metrics, local-search counters and histories."
+            "All 110 seeded searches reproduced their recorded coordinates, metrics, local-search counters and histories."
         )
 
 
