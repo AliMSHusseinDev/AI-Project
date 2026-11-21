@@ -96,7 +96,7 @@ def main():
         "Using the deployment studio",
         [
             p(
-                "Load a saved environment or set the grid size, base, radii, spacing and seed. The map counts sampled sites and blocked cells separately. Additional obstacles must fit the count cap, remaining area budget and free cells outside the station. Generate obstacles applies the current count and seed."
+                "Set the grid, station, radii, spacing and seed, or load a saved map. The map counts sampled sites and blocked cells separately. Generate obstacles replaces the blocks at the selected count and advances the displayed seed if it would repeat the current nonempty map. Re-enter an earlier seed with the same settings to reproduce a layout. Blocks must fit the count, area and station-clearance limits."
             ),
             h("Edit the terrain"),
             p(
@@ -276,7 +276,7 @@ def main():
             h("System architecture"),
             architecture(),
             p(
-                "Arrows show calls or requests for data. The browser polls a job. FastAPI starts a separate worker process. Comparison runs each method from the same input. The validator rebuilds the answer from the returned positions."
+                "The browser polls FastAPI for each job. The worker publishes progress through a multiprocessing manager, which also carries cancellation requests. Comparison runs each method from the same input. The validator rebuilds the answer from the returned positions."
             ),
             table(
                 [

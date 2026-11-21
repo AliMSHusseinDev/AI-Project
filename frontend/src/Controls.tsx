@@ -13,7 +13,7 @@ import type { Env, Limits } from "./types";
 const tips: Record<string, string> = {
   "Site spacing": "Grid units between adjacent monitoring and candidate sites.",
   "Environment seed":
-    "Repeat automatic obstacle placement with the same settings.",
+    "Generate a layout from this seed. Generating the same layout again advances the seed.",
   "Algorithm seed": "Repeat the random choices of the search.",
   Population: "Deployments maintained in each full generation.",
   Generations: "Maximum evolutionary rounds.",

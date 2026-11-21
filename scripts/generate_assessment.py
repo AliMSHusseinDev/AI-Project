@@ -88,7 +88,7 @@ body = [
         [125, 74, 155, 136],
     ),
     p(
-        "For each numbered row, enter Grid size, Base station X and Base station Y. Confirm numeric fields with Enter. Set the common terrain values, set Obstacle count to the row value, and click Generate obstacles. Record the available monitoring points and blocked area from the map."
+        "For each row, enter Grid size and Base station X and Y. Confirm numeric fields with Enter. Set the common values and the row's Obstacle count. Click Generate obstacles once and check that Seed is 42. Repeated clicks on a nonempty generated map choose a new seed. Record the available monitoring points and blocked area."
     ),
     table(inputs, [32, 55, 72, 65, 266]),
     p(

@@ -91,6 +91,7 @@ export default function App() {
   const [before, setBefore] = useState<Env[]>([]),
     [after, setAfter] = useState<Env[]>([]);
   const [busy, setBusy] = useState(false),
+    [generating, setGenerating] = useState(false),
     [job, setJob] = useState(""),
     [progress, setProgress] = useState({ label: "", percent: 0 });
   const [mode, setMode] = useState("Comparison"),
@@ -166,12 +167,14 @@ export default function App() {
       return;
     }
     editing.current = true;
+    setGenerating(true);
     const stamp = version.current;
     try {
       const next = await api("generate", {
         environment: env,
         count: append ? env.obstacles.length + 1 : count,
         append,
+        fresh: !append,
       });
       if (stamp === version.current) {
         change(next);
@@ -180,13 +183,14 @@ export default function App() {
         setNotice(
           append
             ? "Obstacle added."
-            : "Obstacles generated with seed " + env.seed + ".",
+            : "Obstacles generated with seed " + next.seed + ".",
         );
       }
     } catch (e) {
       setNotice(String(e));
     } finally {
       editing.current = false;
+      setGenerating(false);
     }
   }
   useEffect(() => {
@@ -425,7 +429,7 @@ export default function App() {
         {page === "Environment" && (
           <div className="workspace">
             <aside>
-              <fieldset disabled={busy || !online}>
+              <fieldset disabled={busy || generating || !online}>
                 <Controls
                   env={env}
                   limits={limits}
@@ -504,7 +508,7 @@ export default function App() {
 
                   <button
                     className="wide primary"
-                    disabled={busy || !online}
+                    disabled={busy || generating || !online}
                     onClick={() => run(mode)}
                   >
                     <Play />

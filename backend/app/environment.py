@@ -9,6 +9,7 @@ Point = tuple[int, int]
 AREA_PER_OBSTACLE = 150
 MAX_BLOCKED_PERCENT = 15
 MAX_SIDE = 12
+MAX_SEED = 2**31 - 1
 
 
 class Model(BaseModel):
@@ -42,7 +43,7 @@ class Environment(Model):
     sensing: float = Field(default=5.5, gt=0, le=30)
     communication: float = Field(default=8, gt=0, le=30)
     spacing: int = Field(default=2, ge=2, le=6)
-    seed: int = Field(default=42, ge=0, le=2147483647)
+    seed: int = Field(default=42, ge=0, le=MAX_SEED)
     obstacles: list[Obstacle] = Field(default_factory=list)
 
     @property
@@ -150,3 +151,18 @@ def generate(environment, count, append=False):
         rectangles.append(rect)
         remaining_area -= width * height
     raise ValueError("Could not place all obstacles within the retry limit.")
+
+
+def generate_fresh(environment, count):
+    """Use the entered seed unless it reproduces the layout already on the map."""
+
+    def geometry(layout):
+        return {(r.x, r.y, r.w, r.h) for r in layout.obstacles}
+
+    result = generate(environment, count)
+    if count and count == len(environment.obstacles):
+        previous = geometry(environment)
+        while geometry(result) == previous:
+            seed = (result.seed + 1) % (MAX_SEED + 1)
+            result = generate(environment.model_copy(update={"seed": seed}), count)
+    return result

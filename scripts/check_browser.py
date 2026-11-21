@@ -165,11 +165,42 @@ def check(page, folder):
     button("Generate obstacles").click()
     expect(page.get_by_text("100 × 100 grid · 66 obstacles · Seed 42")).to_be_visible()
     barrier = snapshot()
+    seed_field = page.get_by_label("Environment seed", exact=True)
+    previous = barrier
+    for seed in (43, 44, 45):
+        button("Generate obstacles").click()
+        expect(seed_field).to_have_value(str(seed))
+        current = snapshot()
+        assert current["obstacles"] != previous["obstacles"]
+        assert current["seed"] == seed and len(current["obstacles"]) == 66
+        bx, by = current["base"]
+        margin = current["base_margin"]
+        occupied = {
+            (x, y)
+            for x in range(bx - margin, bx + margin + 1)
+            for y in range(by - margin, by + margin + 1)
+        }
+        for r in current["obstacles"]:
+            cells = {
+                (x, y)
+                for x in range(r["x"], r["x"] + r["w"])
+                for y in range(r["y"], r["y"] + r["h"])
+            }
+            assert cells.isdisjoint(occupied)
+            occupied.update(cells)
+        previous = current
+    seed_field.fill("42")
+    seed_field.press("Enter")
+    button("Generate obstacles").click()
+    expect(
+        page.get_by_text("Obstacles generated with seed 42.", exact=False)
+    ).to_be_visible()
+    assert snapshot() == barrier
     page.locator("#size").focus()
     page.keyboard.press("Home")
     assert snapshot() == barrier
     evidence.append(
-        "Grid and obstacle sliders: 100 by 100 terrain, 66 valid obstacles, invalid shrink preserved layout."
+        "At the 66-block cap, three more Generate clicks produced different, overlap-free maps. Re-entering seed 42 reproduced the first map. An invalid grid shrink preserved it."
     )
     load(env)
     for algorithm in ["GA", "MA"]:

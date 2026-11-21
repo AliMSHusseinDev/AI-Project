@@ -1,9 +1,8 @@
-import json
 import multiprocessing
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Future, ProcessPoolExecutor
 from contextlib import asynccontextmanager
-from pathlib import Path
-from tempfile import TemporaryDirectory
+from dataclasses import dataclass
+from multiprocessing.managers import DictProxy
 from threading import Lock
 from typing import Literal
 from uuid import uuid4
@@ -13,6 +12,7 @@ from .environment import (
     Environment,
     Model,
     generate,
+    generate_fresh,
     AREA_PER_OBSTACLE,
     MAX_BLOCKED_PERCENT,
     MAX_SIDE,
@@ -34,17 +34,21 @@ class Generation(Model):
     environment: Environment
     count: int = Field(ge=0, le=66)
     append: bool = False
+    fresh: bool = False
 
 
-def worker(request, folder):
-    folder = Path(folder)
+@dataclass
+class Job:
+    request: Run
+    future: Future
+    state: DictProxy
 
+
+def worker(request, state):
     def report(detail):
-        if (folder / "cancel").exists():
+        if state.get("cancelled"):
             raise InterruptedError("Cancelled")
-        temp = folder / "pending"
-        temp.write_text(json.dumps(detail), encoding="utf8")
-        temp.replace(folder / "progress")
+        state["progress"] = detail
 
     if request.mode == "Benchmark":
         return benchmark(
@@ -81,17 +85,20 @@ def worker(request, folder):
 
 @asynccontextmanager
 async def lifespan(app):
+    context = multiprocessing.get_context("spawn")
     with (
-        TemporaryDirectory() as root,
-        ProcessPoolExecutor(
-            max_workers=2, mp_context=multiprocessing.get_context("spawn")
-        ) as pool,
+        context.Manager() as manager,
+        ProcessPoolExecutor(max_workers=2, mp_context=context) as pool,
     ):
-        app.state.root, app.state.pool = Path(root), pool
+        app.state.manager, app.state.pool = manager, pool
         app.state.jobs = {}
-        yield
-        for key in app.state.jobs:
-            (Path(root) / key / "cancel").touch()
+        try:
+            yield
+        finally:
+            for job in app.state.jobs.values():
+                if not job.future.done():
+                    job.state["cancelled"] = True
+                    job.future.cancel()
 
 
 app = FastAPI(title="AI Project", lifespan=lifespan)
@@ -116,6 +123,8 @@ def check_environment(environment: Environment):
 @app.post("/api/generate")
 def generate_obstacles(body: Generation):
     try:
+        if body.fresh and not body.append:
+            return generate_fresh(body.environment, body.count)
         return generate(body.environment, body.count, body.append)
     except ValueError as error:
         raise HTTPException(422, str(error))
@@ -125,15 +134,15 @@ def generate_obstacles(body: Generation):
 def start(body: Run):
     with lock:
         jobs = app.state.jobs
-        if sum(not future.done() for _, future in jobs.values()) >= 4:
+        if sum(not job.future.done() for job in jobs.values()) >= 4:
             raise HTTPException(429, "Four runs are already active.")
         if len(jobs) >= 24:
-            oldest = next(key for key, (_, future) in jobs.items() if future.done())
+            oldest = next(key for key, job in jobs.items() if job.future.done())
             del jobs[oldest]
         key = uuid4().hex
-        folder = app.state.root / key
-        folder.mkdir()
-        jobs[key] = (body, app.state.pool.submit(worker, body, str(folder)))
+        state = app.state.manager.dict()
+        future = app.state.pool.submit(worker, body, state)
+        jobs[key] = Job(body, future, state)
     return dict(id=key)
 
 
@@ -146,41 +155,36 @@ def lookup(key):
 
 @app.get("/api/jobs/{key}")
 def status(key: str):
-    _, future = lookup(key)
-    folder = app.state.root / key
-    if (folder / "cancel").exists():
+    job = lookup(key)
+    if job.state.get("cancelled"):
         return dict(state="cancelled")
-    if future.done():
+    if job.future.done():
         try:
-            return dict(state="complete", result=future.result())
+            return dict(state="complete", result=job.future.result())
         except Exception as error:
             return dict(state="failed", error=str(error))
-    path = folder / "progress"
-    return dict(
-        state="running",
-        progress=json.loads(path.read_text()) if path.exists() else None,
-    )
+    return dict(state="running", progress=job.state.get("progress"))
 
 
 @app.delete("/api/jobs/{key}")
 def cancel(key: str):
-    _, future = lookup(key)
-    (app.state.root / key / "cancel").touch()
-    future.cancel()
+    job = lookup(key)
+    job.state["cancelled"] = True
+    job.future.cancel()
     return dict(state="cancelled")
 
 
 def current_results(key, environment):
-    body, future = lookup(key)
+    job = lookup(key)
     if (
-        environment != body.environment
-        or body.mode == "Benchmark"
-        or not future.done()
-        or (app.state.root / key / "cancel").exists()
-        or future.exception()
+        environment != job.request.environment
+        or job.request.mode == "Benchmark"
+        or not job.future.done()
+        or job.state.get("cancelled")
+        or job.future.exception()
     ):
         raise HTTPException(409, "A completed run for this environment is required.")
-    return future.result()
+    return job.future.result()
 
 
 @app.post("/api/jobs/{key}/validate")
