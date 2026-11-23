@@ -4,7 +4,7 @@ A Python implementation of Genetic Algorithm (GA) and Memetic Algorithm (MA) sen
 
 ## Start on Windows
 
-Install **Python 3.12** with the Windows Python launcher and **Node.js 22 or 24** with npm. Extract the project into a writable folder. Double-click **run.bat** there. It installs dependencies, starts the API, verifies its instance on the port it actually bound, and starts the frontend in the same console. Vite opens the browser automatically. Its console prints the actual URL. Press Ctrl+C in the launcher when finished. If a default port is occupied, the launcher uses an available port. Package downloads require internet access on first installation. Running the installed simulator is local.
+Install **Python 3.12** with the Windows Python launcher and **Node.js 22 or 24** with npm. Extract the project into a writable folder. Double-click **run.bat** there. It installs dependencies, starts the API, waits for its own API process to confirm that it is listening on an OS-assigned port, and starts the frontend in the same console. Vite opens the browser automatically. Its console prints the actual URL. Press Ctrl+C in the launcher when finished. If a default port is occupied, the launcher uses an available port. Package downloads require internet access on first installation. Running the installed simulator is local.
 
 For a manual setup, run these PowerShell commands from the project root.
 
@@ -23,7 +23,7 @@ npm --prefix frontend run dev -- --host 127.0.0.1
 
 On Linux, use `python3.12 -m venv .venv`, then `.venv/bin/python` for Python commands. Install the frontend with `npm --prefix frontend ci`. The server processes use ports 8000 and 5173. A single API server owns its job records. Keep it running while inspecting or exporting results.
 
-A previous API (commit `74596e6`) replaced a temporary `pending` file with `progress` on every progress callback. Job state now passes through a multiprocessing manager. The launcher checks an instance identifier and the API protocol before opening the studio. Unexpected worker failures log the job ID and traceback in the API console. The original Windows lock owner is unknown. The regression suite exercises 20 GA, 20 MA and 20 Comparison jobs across two API lifespans and tests file-replacement denial. See `Assessment/evidence/progress-diagnostic.txt` for the historical fault injection.
+A previous API (commit `74596e6`) replaced a temporary `pending` file with `progress` on every progress callback. Job state now passes through a multiprocessing manager. The API signals readiness directly to the launcher after Uvicorn starts listening. The browser checks the API protocol. Unexpected worker failures log the job ID and traceback in the API console. The original Windows lock owner is unknown. The regression suite exercises 20 GA, 20 MA and 20 Comparison jobs across two API lifespans and tests file-replacement denial. See `Assessment/evidence/progress-diagnostic.txt` for the historical fault injection.
 
 ## Use the studio
 
