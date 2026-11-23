@@ -4,7 +4,7 @@ A Python implementation of Genetic Algorithm (GA) and Memetic Algorithm (MA) sen
 
 ## Start on Windows
 
-Install **Python 3.12** with the Windows Python launcher and **Node.js 22 or 24** with npm. Extract the project into a writable folder. Double-click **run.bat** there. It installs dependencies, starts the API, verifies its instance on port 8000, and starts the frontend in the same console. Once Vite is ready, open **http://localhost:5173**. Press Ctrl+C in the launcher when finished. If an older API occupies port 8000, close its window before restarting this copy. Package downloads require internet access on first installation. Running the installed simulator is local.
+Install **Python 3.12** with the Windows Python launcher and **Node.js 22 or 24** with npm. Extract the project into a writable folder. Double-click **run.bat** there. It installs dependencies, starts the API, verifies its instance on the port it actually bound, and starts the frontend in the same console. Vite opens the browser automatically. Its console prints the actual URL. Press Ctrl+C in the launcher when finished. If a default port is occupied, the launcher uses an available port. Package downloads require internet access on first installation. Running the installed simulator is local.
 
 For a manual setup, run these PowerShell commands from the project root.
 

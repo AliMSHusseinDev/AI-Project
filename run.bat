@@ -13,6 +13,6 @@ if not exist outputs mkdir outputs
 "%~dp0.venv\Scripts\python.exe" scripts\start_studio.py || goto :failed
 exit /b
 :failed
-echo Setup failed. Check the Python 3.12 and Node.js installations and the message above.
+echo AI Project stopped before launch. See the specific error above.
 pause
 exit /b 1
