@@ -171,3 +171,62 @@ def test_illegal_sensor_and_invalid_environment_fail_independently():
     assert not validate(env.model_copy(update={"base": (-1, 0)}), result)["checks"][
         "Environment integrity"
     ]
+
+
+@pytest.mark.parametrize("method", ["GA", "MA"])
+def test_manual_targets_change_search_and_independent_audit(method):
+    env = Environment(
+        size=20, base=(10, 10), monitoring_mode="manual", manual_points=[(7, 7), (9, 9)]
+    )
+    result = optimize(env, Settings(), method)
+    assert (
+        result["monitoring_count"] == 2
+        and result["count"] == 1
+        and result["audit"]["passed"]
+    )
+    changed = env.model_copy(update={"manual_points": [(0, 0), (19, 19)]})
+    audit = validate(changed, result)
+    assert not audit["passed"] and audit["coverage"] < 100
+    assert not validate(env, result | {"monitoring_count": 100})["passed"]
+    assert not validate(env, result | {"monitoring_mode": "automatic"})["passed"]
+    empty = env.model_copy(update={"manual_points": []})
+    assert not validate(empty, result)["passed"]
+    with pytest.raises(ValueError, match="at least one"):
+        optimize(empty, Settings(), method)
+
+
+def test_manual_point_behind_obstacle_fails_independent_audit():
+    from backend.app.environment import Obstacle
+
+    env = Environment(
+        size=20,
+        base=(0, 0),
+        sensing=8,
+        monitoring_mode="manual",
+        manual_points=[(7, 1)],
+        obstacles=[Obstacle(id="wall", x=5, y=0, w=1, h=4)],
+    )
+    result = optimize(env, Settings(), "GA")
+    assert result["audit"]["passed"]
+    tampered = result | {"positions": [(2, 2)], "count": 1}
+    assert validate(env, tampered)["coverage"] == 0
+
+
+def test_ma_repairs_off_lattice_manual_target():
+    env = Environment(
+        size=20,
+        base=(0, 0),
+        sensing=1.6,
+        communication=8,
+        monitoring_mode="manual",
+        manual_points=[(5, 1)],
+    )
+    terrain = Terrain(env)
+    evaluator = Evaluator(terrain, 30)
+    child = frozenset([terrain.index[(2, 0)]])
+    stats = dict(attempts=0, evaluations=0, improvements=0)
+    assert evaluator.evaluate(child).holes == 1
+    improved = improve_deployment_with_local_search(
+        child, evaluator, random.Random(7), stats
+    )
+    assert evaluator.evaluate(improved).holes == 0 and stats["evaluations"] > 0

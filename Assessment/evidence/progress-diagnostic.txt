@@ -1,0 +1,19 @@
+Historical worker reproduction on Linux, using injected Windows-style file contention. Native Windows error code and the original lock owner are unknown.
+Old worker: job=diagnostic-job state=running pid=9595 thread=MainThread
+Source exists=True, destination exists=True, destination handle held by diagnostic harness.
+Traceback (most recent call last):
+  File "<stdin>", line 26, in <module>
+  File "74596e6/backend/app/main.py", line 77, in worker
+    optimize(request.environment, request.settings, algorithm, progress)
+  File "<project>/backend/app/evolution.py", line 151, in optimize
+    progress(generation, len(evaluator.cache), cost)
+  File "74596e6/backend/app/main.py", line 65, in progress
+    report(
+  File "74596e6/backend/app/main.py", line 47, in report
+    temp.replace(folder / "progress")
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/pathlib.py", line 1376, in replace
+    os.replace(self, target)
+  File "<stdin>", line 21, in simulate
+PermissionError: [Errno 13] Injected refusal to replace an open destination: '<temp>/diagnostic-job/pending' -> '<temp>/diagnostic-job/progress'
+
+Regression: test_worker_progress_under_file_replacement_denial forbids every filesystem replacement while running each current worker mode. test_repeated_runs_and_restart alternates 60 real jobs across two API lifespans.

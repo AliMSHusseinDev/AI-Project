@@ -30,6 +30,7 @@ import {
   terrainStats,
   BASE_ID,
   saveFile,
+  type Point,
   type Env,
   type Result,
   type Audit,
@@ -46,6 +47,8 @@ const initial: Env = {
   spacing: 2,
   seed: 42,
   obstacles: [],
+  monitoring_mode: "automatic",
+  manual_points: [],
 };
 const legend = [
   ["covered", "Covered point"],
@@ -86,6 +89,8 @@ export default function App() {
       sensing: true,
       communication: true,
     });
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [tool, setTool] = useState<"point" | "obstacle" | null>(null);
   const [showLayers, setShowLayers] = useState(false),
     [notice, setNotice] = useState("");
   const [before, setBefore] = useState<Env[]>([]),
@@ -117,6 +122,7 @@ export default function App() {
   }
   function apply(next: Env) {
     setEnv(next);
+    setSelectedPoint(null);
     setPreview(null);
     setCount(next.obstacles.length);
     select((id) =>
@@ -130,10 +136,11 @@ export default function App() {
     if (
       !legalBase(next, baseRect(next)) ||
       next.obstacles.length > max ||
+      next.manual_points.some((p) => p.some((v) => v < 0 || v >= next.size)) ||
       next.obstacles.some((r) => !legal(next, r, limits))
     ) {
       setNotice(
-        "The station or an obstacle would overlap or cross a boundary. The previous layout is still active.",
+        "This edit would cross the grid boundary or overlap a protected object.",
       );
       return;
     }
@@ -146,7 +153,47 @@ export default function App() {
       requested < count ? "Obstacle count adjusted to the new grid limit." : "",
     );
   }
+  function placeObstacle([x, y]: Point) {
+    if (!manual || busy || editing.current) return;
+    if (!terrainStats(env, limits).capacity) {
+      setNotice("No additional obstacle fits the current count or area limit.");
+      return;
+    }
+    let n = 1;
+    while (env.obstacles.some((r) => r.id === "manual-" + n)) n++;
+    const rect = { id: "manual-" + n, x, y, w: 1, h: 1 };
+    if (!legal(env, rect, limits)) {
+      setNotice(
+        "Choose a free cell outside the station and monitoring points.",
+      );
+      return;
+    }
+    change({ ...env, obstacles: [...env.obstacles, rect] });
+    setCount(env.obstacles.length + 1);
+    select(rect.id);
+    setNotice("Obstacle added.");
+  }
+  function removeSelection() {
+    if (selectedPoint !== null && env.monitoring_mode === "manual") {
+      change({
+        ...env,
+        manual_points: env.manual_points.filter((_, i) => i !== selectedPoint),
+      });
+    } else if (
+      manual &&
+      selected &&
+      env.obstacles.some((r) => r.id === selected)
+    ) {
+      change({
+        ...env,
+        obstacles: env.obstacles.filter((r) => r.id !== selected),
+      });
+      setCount(env.obstacles.length - 1);
+      select(null);
+    }
+  }
   function undo() {
+    setTool(null);
     if (before.length && !busy) {
       setAfter([...after, env]);
       setBefore(before.slice(0, -1));
@@ -154,37 +201,28 @@ export default function App() {
     }
   }
   function redo() {
+    setTool(null);
     if (after.length && !busy) {
       setBefore([...before, env]);
       setAfter(after.slice(0, -1));
       apply(after.at(-1)!);
     }
   }
-  async function generate(append: boolean) {
+  async function generate() {
     if (editing.current || busy) return;
-    if (append && terrainStats(env, limits).capacity === 0) {
-      setNotice("No additional obstacle fits the current count or area limit.");
-      return;
-    }
     editing.current = true;
     setGenerating(true);
     const stamp = version.current;
     try {
       const next = await api("generate", {
         environment: env,
-        count: append ? env.obstacles.length + 1 : count,
-        append,
-        fresh: !append,
+        count,
+        fresh: true,
       });
       if (stamp === version.current) {
         change(next);
         setCount(next.obstacles.length);
-        if (append) select(next.obstacles.at(-1).id);
-        setNotice(
-          append
-            ? "Obstacle added."
-            : "Obstacles generated with seed " + next.seed + ".",
-        );
+        setNotice("Obstacles generated with seed " + next.seed + ".");
       }
     } catch (e) {
       setNotice(String(e));
@@ -195,11 +233,13 @@ export default function App() {
   }
   useEffect(() => {
     let live = true;
-    Promise.all([
-      api("health"),
-      api("generate", { environment: initial, count: 4 }),
-    ])
-      .then(([health, next]) => {
+    api("health")
+      .then(async (health) => {
+        if (health.protocol !== 2)
+          throw Error(
+            "A different API is running. Close the old server and restart this copy of AI Project.",
+          );
+        const next = await api("generate", { environment: initial, count: 4 });
         if (live) {
           setLimits(health);
           setOnline(true);
@@ -217,9 +257,10 @@ export default function App() {
       if (
         page !== "Environment" ||
         busy ||
+        generating ||
         e.repeat ||
         (e.target as HTMLElement).closest(
-          "input,textarea,select,[contenteditable=true]",
+          "input:not([type=range]),textarea,select,[contenteditable=true]",
         )
       )
         return;
@@ -229,9 +270,9 @@ export default function App() {
       } else if (e.ctrlKey && e.key.toLowerCase() === "y") {
         e.preventDefault();
         redo();
-      } else if (manual && !e.ctrlKey && e.key.toLowerCase() === "o") {
+      } else if (e.key === "Delete" && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
-        void generate(true);
+        removeSelection();
       }
     }
     window.addEventListener("keydown", key);
@@ -248,6 +289,7 @@ export default function App() {
     setProgress({ label: "Preparing run", percent: 0 });
     try {
       const { id } = await api("jobs", {
+        protocol: 2,
         mode: method,
         environment: env,
         settings,
@@ -261,7 +303,12 @@ export default function App() {
           setNotice("Run cancelled.");
           break;
         }
-        if (response.state === "failed") throw Error(response.error);
+        if (response.state === "failed")
+          throw Error(
+            "The optimization failed. Check the API console for run " +
+              id +
+              ".",
+          );
         if (response.state === "complete") {
           setResults(response.result);
           setIndex(0);
@@ -318,6 +365,8 @@ export default function App() {
       setNotice(String(e));
     }
   }
+  const emptyManual =
+    env.monitoring_mode === "manual" && !env.manual_points.length;
   const stats = terrainStats(preview ?? env, limits);
   return (
     <>
@@ -391,6 +440,7 @@ export default function App() {
             try {
               const next = await api("environment", JSON.parse(await f.text()));
               if (stamp === version.current) {
+                setTool(null);
                 change(next);
                 setCount(next.obstacles.length);
                 setNotice("Environment loaded.");
@@ -400,7 +450,7 @@ export default function App() {
             }
           }}
         />
-        {notice && (
+        {notice && !busy && (
           <div role="status" className="notice">
             {notice}
             <button aria-label="Dismiss message" onClick={() => setNotice("")}>
@@ -436,6 +486,8 @@ export default function App() {
                   capacity={stats.capacity}
                   manual={manual}
                   mode={(v) => {
+                    setTool(null);
+                    setSelectedPoint(null);
                     setManual(v);
                     setPreview(null);
                     select(null);
@@ -452,13 +504,10 @@ export default function App() {
                   redo={redo}
                   canUndo={!!before.length}
                   canRedo={!!after.length}
-                  remove={() => {
-                    change({
-                      ...env,
-                      obstacles: env.obstacles.filter((r) => r.id !== selected),
-                    });
-                    setCount(env.obstacles.length - 1);
-                  }}
+                  tool={tool}
+                  setTool={setTool}
+                  selectedPoint={selectedPoint}
+                  remove={removeSelection}
                 />
               </fieldset>
               <section className="panel config">
@@ -473,7 +522,12 @@ export default function App() {
                       <button
                         className={mode === m ? "active" : ""}
                         disabled={busy}
-                        onClick={() => setMode(m)}
+                        onClick={() => {
+                          if (mode !== m) {
+                            setMode(m);
+                            clearResults();
+                          }
+                        }}
                         key={m}
                       >
                         {m}
@@ -501,14 +555,25 @@ export default function App() {
                           max={max}
                           step={key === "local_fraction" ? 0.05 : 1}
                           value={settings[key]}
-                          set={(n) => setSettings({ ...settings, [key]: n })}
+                          set={(n) => {
+                            if (!busy && n !== settings[key]) {
+                              setSettings({ ...settings, [key]: n });
+                              clearResults();
+                            }
+                          }}
+                          disabled={busy}
                         />
                       ))}
                   </div>
 
+                  {emptyManual && (
+                    <p className="hint">
+                      Add at least one monitoring point to run.
+                    </p>
+                  )}
                   <button
                     className="wide primary"
-                    disabled={busy || generating || !online}
+                    disabled={busy || generating || !online || emptyManual}
                     onClick={() => run(mode)}
                   >
                     <Play />
@@ -523,7 +588,9 @@ export default function App() {
                   [RadioTower, "Sensors used", result?.count, "nodes", "mint"],
                   [
                     ScanLine,
-                    "Grid coverage",
+                    env.monitoring_mode === "manual"
+                      ? "Selected point coverage"
+                      : "Grid coverage",
                     result?.coverage.toFixed(1),
                     "%",
                     "blue",
@@ -625,14 +692,24 @@ export default function App() {
                   result={result}
                   layers={layers}
                   manual={manual}
-                  locked={busy}
+                  locked={busy || generating}
+                  tool={tool}
+                  stopTool={() => setTool(null)}
+                  placeObstacle={placeObstacle}
+                  selectedPoint={selectedPoint}
+                  selectPoint={(i) => {
+                    setSelectedPoint(i);
+                    if (i !== null) select(null);
+                  }}
+                  notify={setNotice}
                   previewGeometry={setPreview}
                   selected={selected}
                   select={select}
                   commit={change}
                   limits={limits}
                   onCursor={(value) => {
-                    if (cursor.current) cursor.current.value = value;
+                    if (cursor.current && cursor.current.value !== value)
+                      cursor.current.value = value;
                   }}
                 />
                 <div className="map-foot">
@@ -655,9 +732,16 @@ export default function App() {
                     "Grid size": env.size + " × " + env.size,
                     "Total cells": stats.cells,
                     "Blocked cells": stats.area,
-                    "Monitoring sites": stats.total,
-                    "Blocked sites": stats.blocked,
-                    "Available monitoring points": stats.available,
+                    ...(env.monitoring_mode === "automatic"
+                      ? {
+                          "Monitoring sites": stats.total,
+                          "Blocked sites": stats.blocked,
+                          "Available monitoring points": stats.available,
+                        }
+                      : {
+                          "Required monitoring points":
+                            env.manual_points.length,
+                        }),
                     "Blocked area":
                       ((100 * stats.area) / stats.cells).toFixed(2) + "%",
                     Obstacles: env.obstacles.length,
@@ -670,6 +754,12 @@ export default function App() {
                   ))}
                 </dl>
                 <div className="legend">
+                  {env.monitoring_mode === "manual" && (
+                    <span>
+                      <i className="symbol target" />
+                      Required point
+                    </span>
+                  )}
                   {legend.map(([symbol, label]) => (
                     <span key={symbol}>
                       <i className={"symbol " + symbol} />
@@ -702,7 +792,13 @@ export default function App() {
                         <strong>
                           {results[i]?.algorithm} · {a.passed ? "PASS" : "FAIL"}
                         </strong>{" "}
-                        · Coverage {a.coverage.toFixed(2)}% · Connectivity{" "}
+                        ·{" "}
+                        {env.monitoring_mode === "manual"
+                          ? "Selected points"
+                          : "Automatic grid"}{" "}
+                        {results[i].monitoring_count - results[i].holes.length}/
+                        {results[i].monitoring_count} · Coverage{" "}
+                        {a.coverage.toFixed(2)}% · Connectivity{" "}
                         {a.connectivity.toFixed(2)}%
                         {Object.entries(a.checks)
                           .filter(

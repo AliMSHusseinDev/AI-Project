@@ -37,6 +37,7 @@ for index, (entry, (size, count), question) in enumerate(
     zip(runs, specs, questions, strict=True), 1
 ):
     env = entry["environment"]
+    assert env["monitoring_mode"] == "automatic"
     assert (env["size"], len(env["obstacles"]), env["base"]) == (
         size,
         count,
@@ -74,7 +75,7 @@ body = [
     ),
     h("2   Run these five experiments"),
     p(
-        "Start the application with run.bat. Use a fresh page with the default one-cell station. In Environment select Automatic. Before each setup, set Obstacle count to 0 and click Generate obstacles. This clears the previous layout so it cannot block a grid change."
+        "Start the application with run.bat. Use a fresh page with the default one-cell station. Set both Obstacle placement and Monitoring points to Automatic. Before each setup, set Obstacle count to 0 and click Generate obstacles. This clears the previous layout so it cannot block a grid change."
     ),
     table(
         [
@@ -133,10 +134,10 @@ body += [
     PageBreak(),
     h("5   Validation and testing"),
     p(
-        "Validate Solution rebuilds the monitoring lattice and checks the current station footprint and obstacle layout. It checks unique, legal sensor positions, then uses its own sight-line test and walks the graph from the station. The report checks recorded values against this calculation. Every mandatory check must pass."
+        "In these automatic experiments Validate Solution rebuilds the monitoring lattice and checks the current station footprint and obstacle layout. It checks unique, legal sensor positions, then uses its own sight-line test and walks the graph from the station. The report checks recorded values against this calculation. Every mandatory check must pass."
     ),
     p(
-        f"The recorded pytest run executed {suite.attrib['tests']} cases with {suite.attrib['failures']} failures, {suite.attrib['errors']} errors and {suite.attrib['skipped']} skips. The suite includes collisions, monitoring counts, exhausted area, duplicate scores, budget stops, local moves, disconnected radios, false coverage claims, stale results and selective exports."
+        f"The recorded pytest run executed {suite.attrib['tests']} cases with {suite.attrib['failures']} failures, {suite.attrib['errors']} errors and {suite.attrib['skipped']} skips. On Linux, 20 GA, 20 MA and 20 Comparison jobs completed across two API lifespans. Other tests check manual targets, geometry, budgets, failed runs and cancellation. Native Windows execution remains unverified."
     ),
     h("Browser evidence"),
     *[p(line, "small") for line in browser],

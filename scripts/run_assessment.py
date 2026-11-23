@@ -35,6 +35,7 @@ def exercise(page):
 
     for index, (size, count) in enumerate(CASES, 1):
         button("Automatic").click()
+        button("Automatic monitoring points").click()
         generate(0)
         number("Grid size value", size)
         number("Base station X", size // 2)

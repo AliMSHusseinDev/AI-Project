@@ -204,6 +204,7 @@ def optimize(
         possible=possible,
         initial_count=len(initial),
         monitoring_count=len(terrain.points),
+        monitoring_mode=environment.monitoring_mode,
         cost=score.cost,
         generations=completed,
         termination=termination,

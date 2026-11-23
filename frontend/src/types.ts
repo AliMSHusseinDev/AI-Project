@@ -9,6 +9,8 @@ export type Env = {
   spacing: number;
   seed: number;
   obstacles: Rect[];
+  monitoring_mode: "automatic" | "manual";
+  manual_points: Point[];
 };
 export type Layers = {
   points: boolean;
@@ -29,6 +31,8 @@ export type Result = {
   holes: Point[];
   unreachable: Point[];
   links: [Point, Point][];
+  monitoring_mode: Env["monitoring_mode"];
+  monitoring_count: number;
   feasible: boolean;
   possible: boolean;
   count: number;
@@ -93,7 +97,10 @@ export function terrainStats(e: Env, limits: Limits) {
   const capacity = Math.min(
     Math.floor(cells / limits.area_per_obstacle) - e.obstacles.length,
     Math.floor((cells * limits.blocked_percent) / 100) - area,
-    cells - area - baseRect(e).w ** 2,
+    cells -
+      area -
+      baseRect(e).w ** 2 -
+      e.manual_points.filter(([x, y]) => !contains(baseRect(e), x, y)).length,
   );
   return { cells, total, area, blocked, available: total - blocked, capacity };
 }
@@ -109,6 +116,7 @@ export function legal(e: Env, r: Rect, limits: Limits) {
     r.y + r.h <= e.size &&
     !overlaps(r, baseRect(e)) &&
     !others.some((o) => overlaps(o, r)) &&
+    !e.manual_points.some(([x, y]) => contains(r, x, y)) &&
     100 * (others.reduce((sum, o) => sum + o.w * o.h, 0) + r.w * r.h) <=
       limits.blocked_percent * e.size ** 2
   );
@@ -120,7 +128,18 @@ export async function api(path: string, body?: unknown, method?: string) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!response.ok) {
+    if (response.status >= 500)
+      throw Error(
+        "The server could not complete the request. Check the API console.",
+      );
     const error = await response.json();
+    if (
+      Array.isArray(error.detail) &&
+      error.detail.some((d: { loc?: string[] }) => d.loc?.includes("protocol"))
+    )
+      throw Error(
+        "A different API is running. Restart this copy of AI Project.",
+      );
     throw Error(
       typeof error.detail === "string"
         ? error.detail

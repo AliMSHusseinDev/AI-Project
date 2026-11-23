@@ -31,6 +31,10 @@ class Terrain:
     def __init__(self, environment):
         self.env = environment
         self.points = environment.monitoring_points()
+        if not self.points:
+            raise ValueError(
+                "Add at least one required monitoring point before running."
+            )
         self.sites = environment.candidate_positions()
         self.base = len(self.sites)
         self.positions = self.sites + [environment.base]

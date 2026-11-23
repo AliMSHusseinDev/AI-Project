@@ -28,7 +28,7 @@ def check(replay=False):
     }
     for name in CASES:
         env = scenario(name)
-        assert env.model_dump(mode="json") == json.loads(
+        assert env == Environment.model_validate_json(
             (ROOT / f"Dataset/scenarios/{name}.json").read_text()
         )
         for record in (r for r in records if r["case"] == name):

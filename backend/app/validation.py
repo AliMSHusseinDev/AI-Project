@@ -60,7 +60,11 @@ def validate(environment, result):
     footprint = environment.base_footprint
     allowed = {point for point in lattice if not footprint.contains(point)}
     valid = len(sensors) == len(set(sensors)) and all(p in allowed for p in sensors)
-    points = np.array(lattice).reshape(-1, 2)
+    points = np.array(
+        environment.manual_points
+        if environment.monitoring_mode == "manual"
+        else lattice
+    ).reshape(-1, 2)
     mask = coverage_mask(environment, sensors, points)
     positions = np.array([environment.base, *sensors])
     pending, reached = [0], {0}
@@ -77,7 +81,7 @@ def validate(environment, result):
             pending.append(index)
             reached.add(index)
     connected = len(reached) - 1
-    coverage = 100 * int(mask.sum()) / len(points) if len(points) else 100
+    coverage = 100 * int(mask.sum()) / len(points) if len(points) else 0
     connectivity = 100 * connected / len(sensors) if sensors else 0
     holes = {tuple(p) for p in points[~mask].tolist()}
     unreachable = {sensors[i - 1] for i in range(1, len(positions)) if i not in reached}
@@ -87,10 +91,13 @@ def validate(environment, result):
         "Unique legal coordinates": valid,
         "Active count": result["count"] == len(sensors),
         "Coverage record": abs(coverage - result["coverage"]) < 1e-8
-        and holes == set(map(tuple, result["holes"])),
+        and holes == set(map(tuple, result["holes"]))
+        and result.get("monitoring_mode", environment.monitoring_mode)
+        == environment.monitoring_mode
+        and result.get("monitoring_count", len(points)) == len(points),
         "Connectivity record": abs(connectivity - result["connectivity"]) < 1e-8
         and unreachable == set(map(tuple, result["unreachable"])),
-        "All monitoring points covered": not holes,
+        "All monitoring points covered": bool(len(points)) and not holes,
         "Every sensor can route to base": bool(sensors) and connected == len(sensors),
         "Feasibility record": result["feasible"]
         == (valid and not holes and bool(sensors) and not unreachable),

@@ -12,7 +12,12 @@ import type { Result } from "./types";
 const fields: [string, (r: Result) => string | number][] = [
   ["Solution status", (r) => (r.feasible ? "Feasible" : "Infeasible")],
   ["Active sensors", (r) => r.count],
-  ["Grid coverage", (r) => r.coverage.toFixed(2) + "%"],
+  ["Monitoring mode", (r) => r.monitoring_mode],
+  [
+    "Covered / required points",
+    (r) => r.monitoring_count - r.holes.length + " / " + r.monitoring_count,
+  ],
+  ["Monitoring coverage", (r) => r.coverage.toFixed(2) + "%"],
   ["Connectivity", (r) => r.connectivity.toFixed(2) + "%"],
   ["Disconnected sensors", (r) => r.unreachable.length],
   ["Execution time", (r) => r.seconds.toFixed(4) + " s"],

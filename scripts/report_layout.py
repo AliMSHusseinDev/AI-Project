@@ -156,8 +156,8 @@ def box(d, x, y, w, h, text, shape="box"):
 def flow(memetic):
     d = Drawing(WIDTH, 450)
     steps = [
-        ("Start with a fixed environment", "ellipse"),
-        ("Build visibility and links. Seed the population.", "box"),
+        ("Fix terrain and automatic or manual targets", "ellipse"),
+        ("Build target masks and radio links. Seed population.", "box"),
         ("Reuse cached scores. Record the best.", "box"),
         ("Budget or stop?", "diamond"),
         ("Keep two elites. Pick parents by tournament.", "box"),
@@ -202,7 +202,15 @@ def flow(memetic):
 def dfd():
     d = Drawing(WIDTH, 227)
     box(d, 55, 187, 82, 32, "Student")
-    box(d, 235, 187, 138, 42, "1. Check grid, blocks\nand station footprint", "process")
+    box(
+        d,
+        235,
+        187,
+        138,
+        42,
+        "1. Check targets, blocks\nand station footprint",
+        "process",
+    )
     box(d, 411, 187, 130, 42, "2. Optimize\nand validate", "process")
     arrow(d, [(97, 187), (165, 187)], (131, 193, "settings"))
     arrow(d, [(304, 187), (346, 187)], (325, 193, "terrain"))
@@ -232,8 +240,8 @@ def use_cases():
     label(d, 44, 77, "Student")
     # One association per ellipse. The left rail bundles lines from the same actor.
     names = [
-        "Configure environment",
-        "Edit station and obstacles",
+        "Choose automatic or manual targets",
+        "Edit station, obstacles and target points",
         "Generate obstacles",
         "Run GA",
         "Run MA",
@@ -256,11 +264,11 @@ def use_cases():
 def architecture():
     d = Drawing(WIDTH, 265)
     box(d, 85, 235, 140, 32, "Environment / Results")
-    box(d, 270, 235, 110, 32, "FastAPI jobs")
+    box(d, 270, 235, 110, 32, "Verified API jobs")
     arrow(d, [(156, 235), (214, 235)], (185, 242, "requests"))
     box(d, 420, 235, 111, 32, "CSV / PDF / PNG")
     arrow(d, [(326, 235), (364, 235)])
-    box(d, 130, 169, 200, 36, "Worker process\nSingle, paired or benchmark run")
+    box(d, 130, 169, 200, 36, "Worker process\nProgress via process manager")
     arrow(d, [(270, 219), (270, 169), (231, 169)])
     box(d, 365, 169, 159, 36, "Independent audit\nSeparate geometry + DFS")
     arrow(d, [(231, 179), (284, 179)])
@@ -268,7 +276,7 @@ def architecture():
     arrow(d, [(130, 151), (130, 122)])
     box(d, 366, 103, 160, 36, "Fitness evaluator\nCoverage + base reachability")
     arrow(d, [(231, 103), (285, 103)])
-    box(d, 366, 38, 184, 36, "Environment + geometry\nSite masks and radio neighbors")
+    box(d, 366, 38, 184, 36, "Environment + geometry\nTarget set and radio neighbors")
     arrow(d, [(366, 85), (366, 57)])
     return d
 

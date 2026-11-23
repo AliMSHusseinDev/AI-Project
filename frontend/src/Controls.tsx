@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   SlidersHorizontal,
   Shuffle,
@@ -32,6 +32,7 @@ export function NumberField({
   min,
   max,
   step = 1,
+  disabled = false,
 }: {
   label: string;
   value: number;
@@ -39,6 +40,7 @@ export function NumberField({
   min: number;
   max: number;
   step?: number;
+  disabled?: boolean;
 }) {
   const [draft, update] = useState(String(value));
   useEffect(() => update(String(value)), [value]);
@@ -51,6 +53,7 @@ export function NumberField({
         min={min}
         max={max}
         step={step}
+        disabled={disabled}
         value={draft}
         onChange={(e) => update(e.target.value)}
         onBlur={(e) => {
@@ -75,24 +78,36 @@ type Props = {
   count: number;
   setCount: (n: number) => void;
   change: (e: Env) => void;
-  generate: (append: boolean) => void;
+  generate: () => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
   capacity: number;
   remove: () => void;
+  tool: "point" | "obstacle" | null;
+  setTool: (tool: Props["tool"]) => void;
+  selectedPoint: number | null;
 };
 export function Controls(p: Props) {
   const { env, limits } = p,
     max = Math.floor(env.size ** 2 / limits.area_per_obstacle);
+  const [draftSize, setDraftSize] = useState<number | null>(null);
+  const sliding = useRef(false);
   const resize = (size: number) =>
     p.change({
       ...env,
       size,
-      base: env.base.every((v) => v < size)
-        ? env.base
-        : [Math.floor(size / 2), Math.floor(size / 2)],
+      base: [
+        Math.max(
+          env.base_margin,
+          Math.min(env.base[0], size - 1 - env.base_margin),
+        ),
+        Math.max(
+          env.base_margin,
+          Math.min(env.base[1], size - 1 - env.base_margin),
+        ),
+      ],
     });
   return (
     <section className="panel config">
@@ -128,8 +143,30 @@ export function Controls(p: Props) {
           type="range"
           min="20"
           max="100"
-          value={env.size}
-          onChange={(e) => resize(+e.target.value)}
+          value={draftSize ?? env.size}
+          aria-valuetext={
+            draftSize === null
+              ? String(env.size)
+              : `Requested ${draftSize}, current grid ${env.size}`
+          }
+          onPointerDown={(e) => {
+            sliding.current = true;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onChange={(e) =>
+            sliding.current
+              ? setDraftSize(+e.target.value)
+              : resize(+e.target.value)
+          }
+          onPointerUp={(e) => {
+            if (sliding.current) resize(+e.currentTarget.value);
+            sliding.current = false;
+            setDraftSize(null);
+          }}
+          onLostPointerCapture={() => {
+            sliding.current = false;
+            setDraftSize(null);
+          }}
         />
         <div className="limits">
           <span>20 × 20</span>
@@ -154,7 +191,7 @@ export function Controls(p: Props) {
           <span>0</span>
           <span>Max {max}</span>
         </div>
-        <label className="label">Placement mode</label>
+        <label className="label">Obstacle placement</label>
         <div className="seg">
           <button
             className={!p.manual ? "active" : ""}
@@ -176,7 +213,10 @@ export function Controls(p: Props) {
             <div className="row wrap">
               <button
                 disabled={p.capacity === 0}
-                onClick={() => p.generate(true)}
+                aria-pressed={p.tool === "obstacle"}
+                onClick={() =>
+                  p.setTool(p.tool === "obstacle" ? null : "obstacle")
+                }
               >
                 <Plus />
                 Add (O)
@@ -193,15 +233,69 @@ export function Controls(p: Props) {
               </button>
             </div>
             <p className="hint">
-              Drag to move. Hover over the selected obstacle and press R to
-              resize.
+              Press O over a free cell, or choose Add and click the map. Select
+              a block to move it, press R to resize, or Delete to remove.
             </p>
           </>
         ) : (
-          <button className="wide soft" onClick={() => p.generate(false)}>
+          <button className="wide soft" onClick={p.generate}>
             <Shuffle />
             Generate obstacles
           </button>
+        )}
+        <hr />
+        <h3>Monitoring points</h3>
+        <div className="seg" role="group" aria-label="Monitoring points mode">
+          {(["automatic", "manual"] as const).map((m) => (
+            <button
+              key={m}
+              aria-label={
+                m === "automatic"
+                  ? "Automatic monitoring points"
+                  : "Manual monitoring points"
+              }
+              aria-pressed={env.monitoring_mode === m}
+              className={env.monitoring_mode === m ? "active" : ""}
+              onClick={() => {
+                p.setTool(null);
+                p.change({ ...env, monitoring_mode: m });
+              }}
+            >
+              {m === "automatic" ? "Automatic" : "Manual"}
+            </button>
+          ))}
+        </div>
+        {env.monitoring_mode === "manual" && (
+          <>
+            <div className="row wrap">
+              <button
+                aria-pressed={p.tool === "point"}
+                onClick={() => p.setTool(p.tool === "point" ? null : "point")}
+              >
+                <Plus />
+                Add points
+              </button>
+              <button disabled={p.selectedPoint === null} onClick={p.remove}>
+                Delete point
+              </button>
+              {!p.manual && (
+                <>
+                  <button title="Undo" disabled={!p.canUndo} onClick={p.undo}>
+                    <Undo2 />
+                  </button>
+                  <button title="Redo" disabled={!p.canRedo} onClick={p.redo}>
+                    <Redo2 />
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="hint">
+              {p.tool === "point"
+                ? "Click a free cell for each target. Press Escape to finish."
+                : "Select and drag a point to move it. Alt-click accesses the station beneath a point."}{" "}
+              Candidate sensor spacing is {env.spacing}.
+            </p>
+          </>
         )}
         <hr />
         <h3>Sensor ranges</h3>
@@ -245,6 +339,7 @@ export function Controls(p: Props) {
           />
           <NumberField
             label="Site spacing"
+            disabled={env.monitoring_mode === "manual"}
             min={2}
             max={6}
             value={env.spacing}

@@ -153,3 +153,49 @@ def test_order_independent_cache_and_last_evaluation():
     with pytest.raises(ValueError):
         evaluator.evaluate(frozenset([4]))
     assert evaluator.evaluate(frozenset([2, 3])) is first and len(evaluator.cache) == 2
+
+
+def test_manual_target_geometry_and_candidate_domain():
+    env = Environment(
+        size=20,
+        base=(10, 10),
+        manual_points=[(1, 1), (10, 10)],
+        monitoring_mode="manual",
+    )
+    assert env.monitoring_points() == [(1, 1), (10, 10)]
+    assert (1, 1) not in env.candidate_positions() and (
+        2,
+        2,
+    ) in env.candidate_positions()
+    for mode in ("manual", "automatic"):
+        for points in ([(1, 1), (1, 1)], [(20, 1)], [(-1, 2)], [(5, 5)]):
+            with pytest.raises(ValidationError):
+                Environment(
+                    monitoring_mode=mode,
+                    manual_points=points,
+                    obstacles=[BLOCK],
+                    size=20,
+                )
+        kept = generate(env.model_copy(update={"monitoring_mode": mode}), 2)
+        assert kept.manual_points == env.manual_points
+        assert not any(r.contains(p) for p in env.manual_points for r in kept.obstacles)
+
+
+def test_all_reserved_manual_cells_exhaust_obstacle_capacity():
+    from backend.app.environment import generate_fresh
+
+    env = Environment(
+        size=20, manual_points=[(x, y) for y in range(20) for x in range(20)]
+    )
+    assert env.additional_capacity == 0
+    with pytest.raises(ValueError):
+        generate_fresh(env, 1)
+
+
+def test_only_one_possible_fresh_layout():
+    from backend.app.environment import generate_fresh
+
+    points = [(x, y) for x in range(20) for y in range(20) if (x, y) != (1, 1)]
+    layout = generate(Environment(size=20, manual_points=points), 1)
+    with pytest.raises(ValueError, match="different layout"):
+        generate_fresh(layout, 1)

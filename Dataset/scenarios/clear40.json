@@ -9,5 +9,7 @@
   "communication": 8.0,
   "spacing": 2,
   "seed": 42,
-  "obstacles": []
+  "obstacles": [],
+  "monitoring_mode": "automatic",
+  "manual_points": []
 }

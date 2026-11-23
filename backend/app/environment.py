@@ -2,6 +2,7 @@
 
 import hashlib
 import random
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -46,6 +47,9 @@ class Environment(Model):
     seed: int = Field(default=42, ge=0, le=MAX_SEED)
     obstacles: list[Obstacle] = Field(default_factory=list)
 
+    monitoring_mode: Literal["automatic", "manual"] = "automatic"
+    manual_points: list[Point] = Field(default_factory=list, max_length=10000)
+
     @property
     def obstacle_limit(self):
         return max(1, self.size**2 // AREA_PER_OBSTACLE)
@@ -66,6 +70,8 @@ class Environment(Model):
         used = sum(r.w * r.h for r in self.obstacles)
         # Every free cell outside the footprint fits one minimum-size (1 x 1) block.
         free_cells = self.size**2 - used - (2 * self.base_margin + 1) ** 2
+        station = self.base_footprint
+        free_cells -= sum(not station.contains(p) for p in self.manual_points)
         return min(
             self.obstacle_limit - len(self.obstacles),
             MAX_BLOCKED_PERCENT * self.size**2 // 100 - used,
@@ -97,13 +103,27 @@ class Environment(Model):
                 raise ValueError("Obstacle crosses the grid edge or covers the base.")
             if any(rect.overlaps(other) for other in self.obstacles[:index]):
                 raise ValueError("Obstacles overlap.")
+        if len(set(self.manual_points)) != len(self.manual_points):
+            raise ValueError("Monitoring points must be unique.")
+        if any(
+            not (0 <= x < self.size and 0 <= y < self.size)
+            for x, y in self.manual_points
+        ):
+            raise ValueError("A monitoring point is outside the grid.")
+        if any(r.contains(p) for r in self.obstacles for p in self.manual_points):
+            raise ValueError("An obstacle covers a saved monitoring point.")
         return self
 
     def identifier(self):
-        data = self.model_dump_json()
+        unchanged_schema = (
+            self.monitoring_mode == "automatic" and not self.manual_points
+        )
+        data = self.model_dump_json(
+            exclude={"monitoring_mode", "manual_points"} if unchanged_schema else set()
+        )
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
-    def monitoring_points(self):
+    def lattice(self):
         return [
             (x, y)
             for y in range(0, self.size, self.spacing)
@@ -111,9 +131,16 @@ class Environment(Model):
             if not any(rect.contains((x, y)) for rect in self.obstacles)
         ]
 
+    def monitoring_points(self):
+        return (
+            list(self.manual_points)
+            if self.monitoring_mode == "manual"
+            else self.lattice()
+        )
+
     def candidate_positions(self):
         station = self.base_footprint
-        return [p for p in self.monitoring_points() if not station.contains(p)]
+        return [p for p in self.lattice() if not station.contains(p)]
 
 
 def generate(environment, count, append=False):
@@ -128,7 +155,18 @@ def generate(environment, count, append=False):
     )
     if count < len(rectangles) or remaining_area < count - len(rectangles):
         raise ValueError("The requested obstacles do not fit in the remaining area.")
-    for attempt in range(5000):
+    reserved = set(environment.manual_points)
+    station = environment.base_footprint
+    free_cells = (
+        environment.size**2
+        - station.w**2
+        - sum(not station.contains(p) for p in reserved)
+    )
+    free_cells -= sum(r.w * r.h for r in rectangles)
+    if count - len(rectangles) > free_cells:
+        raise ValueError("Too few free cells for the requested obstacles.")
+    remaining_area = min(remaining_area, free_cells)
+    for attempt in range(256 if reserved else 5000):
         if len(rectangles) == count:
             return Environment(**(environment.model_dump() | {"obstacles": rectangles}))
         side = min(MAX_SIDE, max(2, environment.size // 7))
@@ -144,13 +182,36 @@ def generate(environment, count, append=False):
             w=width,
             h=height,
         )
-        if any(
-            rect.id == r.id or rect.overlaps(r) for r in rectangles
-        ) or rect.overlaps(environment.base_footprint):
+        if (
+            any(rect.id == r.id or rect.overlaps(r) for r in rectangles)
+            or rect.overlaps(station)
+            or any(
+                (x, y) in reserved
+                for x in range(rect.x, rect.x + width)
+                for y in range(rect.y, rect.y + height)
+            )
+        ):
             continue
         rectangles.append(rect)
         remaining_area -= width * height
-    raise ValueError("Could not place all obstacles within the retry limit.")
+    ids = {r.id for r in rectangles}
+    free = [
+        (x, y)
+        for y in range(environment.size)
+        for x in range(environment.size)
+        if (x, y) not in reserved
+        and not station.contains((x, y))
+        and not any(r.contains((x, y)) for r in rectangles)
+    ]
+    for x, y in rng.sample(free, count - len(rectangles)):
+        name = f"cell-{x}-{y}"
+        while name in ids:
+            name += "_"
+        ids.add(name)
+        rectangles.append(Obstacle(id=name, x=x, y=y, w=1, h=1))
+    if len(rectangles) == count:
+        return Environment(**(environment.model_dump() | {"obstacles": rectangles}))
+    raise ValueError("Too few free cells for these obstacles and monitoring points.")
 
 
 def generate_fresh(environment, count):
@@ -162,7 +223,13 @@ def generate_fresh(environment, count):
     result = generate(environment, count)
     if count and count == len(environment.obstacles):
         previous = geometry(environment)
-        while geometry(result) == previous:
+        for _ in range(32):
+            if geometry(result) != previous:
+                return result
             seed = (result.seed + 1) % (MAX_SEED + 1)
             result = generate(environment.model_copy(update={"seed": seed}), count)
+        if geometry(result) == previous:
+            raise ValueError(
+                "Could not find a different layout. Change the obstacle count or free more cells."
+            )
     return result

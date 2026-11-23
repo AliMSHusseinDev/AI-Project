@@ -67,7 +67,7 @@ def main():
                     ],
                     [
                         "Full coverage and routes",
-                        "Check every unblocked lattice site and every sensor. Show failures.",
+                        "Check every required point and every sensor. Automatic uses the unblocked lattice. Manual uses selected cell centers.",
                     ],
                     [
                         "Interactive work and repeated tests",
@@ -96,18 +96,21 @@ def main():
         "Using the deployment studio",
         [
             p(
-                "Set the grid, station, radii, spacing and seed, or load a saved map. The map counts sampled sites and blocked cells separately. Generate obstacles replaces the blocks at the selected count and advances the displayed seed if it would repeat the current nonempty map. Re-enter an earlier seed with the same settings to reproduce a layout. Blocks must fit the count, area and station-clearance limits."
+                "Drag the grid slider and release to apply. An invalid shrink keeps the previous map. Generate obstacles replaces the requested blocks and advances the seed if the layout would repeat. Saved targets are protected in both modes."
             ),
             h("Edit the terrain"),
             p(
-                "In Manual mode press O to add one block. Click a block and drag to move it. Hover over the selected block and press R. Drag a corner to resize it. Use Delete, Ctrl+Z and Ctrl+Y to delete, undo and redo. Drag the station in either mode. Select it, hover and press R to resize its square around the center. Undo and redo include station edits."
+                "With manual obstacle placement, hover over a free cell and press O. Drag blocks or the station to move. Select, hover and press R, then drag an edge or corner to resize. The station resizes around its center. Delete removes the selected block or point. Ctrl+Z and Ctrl+Y undo and redo."
+            ),
+            p(
+                "Monitoring points has a separate mode. Automatic samples the grid. Manual uses Add points and clicks on free cells. Press Escape to finish, then select or drag a target. At least one is required to run. Save and Load preserve both the mode and points."
             ),
             h("Run and inspect"),
             p(
                 "Set population, generations, evaluation budget and algorithm seed. MA and Comparison also show Local fraction. Select the method and run it. The four cards show count, coverage, reachable sensors and time. In a comparison, switch the map between methods. Blue circles show radio range. Red circles show sensing range. Links show actual clear paths. Layers only change the drawing."
             ),
             p(
-                "Validate Solution rechecks the current layouts. It checks full lattice coverage, routes, legal sensor positions and valid terrain. Edits clear old results. Save environment stores a JSON layout. Load checks it before use."
+                "Validate Solution rechecks the current layouts. It checks coverage of the active target set, routes, legal sensor positions and valid terrain. Edits clear old results. Save environment stores a JSON layout. Load checks it before use."
             ),
             h("Use case diagram"),
             use_cases(),
@@ -195,7 +198,7 @@ def main():
             ),
             h("Coordinate rules"),
             p(
-                "Rows grow down from zero. Columns grow right. Both coordinates of each monitoring site are multiples of the spacing. Only obstacle-free sites need coverage. The station footprint also excludes sensor placement. Its side is 1 + 2 times base_margin. Older files default to one cell. The scenario files use spacing 2, sensing radius 5.5 and radio radius 8."
+                "Rows grow down from zero. Columns grow right. Automatic monitoring sites and candidate sensor locations are multiples of the spacing. Manual targets can be any free cell center. Only obstacle-free sites need coverage. The station footprint also excludes sensor placement. Its side is 1 + 2 times base_margin. Older files default to one cell. The scenario files use spacing 2, sensing radius 5.5 and radio radius 8."
             ),
             h("Generation"),
             p(
@@ -203,7 +206,7 @@ def main():
             ),
             h("Validation and replay"),
             p(
-                "From the repository root run python -m Dataset.generate_dataset. The scenario name selects the size and count. The saved JSON gives exact geometry. The search uses a separate seed. The initial graph tests whether connected sites can cover all required points."
+                "From the repository root run python -m Dataset.generate_dataset. The scenario name selects the size and count. Saved JSON stores the mode in monitoring_mode and the target coordinate pairs in manual_points. Older files default to automatic with no manual targets. The search uses a separate seed. The initial graph tests whether connected sites can cover all required points."
             ),
             h("Limits of the data"),
             p(
@@ -221,7 +224,7 @@ def main():
             ),
             h("One fitness rule"),
             p(
-                "Let K count candidate sites, H count holes, D count disconnected sensors and N count active sensors. Cost = (H + 5D)(K + 1) + N. Lower is better. A feasible cost is at most K. One violation costs at least K + 1. Within the feasible group the smaller deployment wins."
+                "Let K count candidate sites, H count uncovered targets in the active monitoring mode, D count disconnected sensors and N count active sensors. Cost = (H + 5D)(K + 1) + N. Lower is better. A feasible cost is at most K. One violation costs at least K + 1. Within the feasible group the smaller deployment wins."
             ),
             h("Genetic operators"),
             p(
@@ -236,7 +239,7 @@ def main():
             ),
             h("Independent check"),
             p(
-                "A second module checks paths using a separating-axis test, then follows links with a depth-first walk. It checks the reported coordinates, counts, holes, reachability and percentages. Full grid coverage means all defined points were covered. The report also checks that the current terrain is valid."
+                "A second module checks paths using a separating-axis test, then follows links with a depth-first walk. It checks the reported coordinates, counts, holes, reachability and percentages. It reconstructs the automatic lattice or reads the saved manual targets. Coverage measures that set. The report also checks that the current terrain is valid."
             ),
             PageBreak(),
             h("Genetic algorithm"),
@@ -248,7 +251,7 @@ def main():
             h("Memetic algorithm"),
             flow(True),
             p(
-                "MA uses the same parents, crossover, mutation and elites. By default 45% of children enter local search. Find whole disconnected groups. For each group, find the closest pair across the gap to the base component. For holes, choose up to three missing cells and their nearest active sensors."
+                "MA uses the same parents, crossover, mutation and elites. By default 45% of children enter local search. Find whole disconnected groups. For each group, find the closest pair across the gap to the base component. For holes, choose up to three uncovered targets from the active mode and their nearest active sensors."
             ),
             p(
                 "Try legal sites one candidate step away, including diagonals. Try sites toward the target first. Score the whole changed deployment and keep only a strict improvement. For a feasible child, try deleting a spare node. Limit the search to two rounds and the remaining budget."
@@ -276,7 +279,7 @@ def main():
             h("System architecture"),
             architecture(),
             p(
-                "The browser polls FastAPI for each job. The worker publishes progress through a multiprocessing manager, which also carries cancellation requests. Comparison runs each method from the same input. The validator rebuilds the answer from the returned positions."
+                "The Windows launcher verifies the new API instance before starting Vite. The browser checks the protocol and polls FastAPI for each job. The worker publishes progress through a multiprocessing manager, which also carries cancellation requests. Progress needs no file replacement. Worker errors log a traceback with the job ID. Comparison uses identical inputs. The validator rebuilds the answer from the returned positions."
             ),
             table(
                 [

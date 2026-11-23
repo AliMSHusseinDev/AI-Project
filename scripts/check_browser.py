@@ -66,6 +66,38 @@ def check(page, folder):
     def stat(label):
         return page.locator("dl").get_by_text(label, exact=True).locator("../dd")
 
+    def cursors(x, y, w, h):
+        for dx, dy, cursor in [
+            (0, 0, "nwse"),
+            (1, 1, "nwse"),
+            (1, 0, "nesw"),
+            (0, 1, "nesw"),
+            (0, 0.5, "ew"),
+            (1, 0.5, "ew"),
+            (0.5, 0, "ns"),
+            (0.5, 1, "ns"),
+        ]:
+            page.mouse.move(*grid(x + w * dx, y + h * dy))
+            expect(page.locator("canvas")).to_have_css("cursor", cursor + "-resize")
+
+    # A drag previews only the thumb. Size and objects commit together on release.
+    clear = env | {"obstacles": [], "base": [19, 19]}
+    load(clear)
+    slider = page.locator("#size")
+    slider.scroll_into_view_if_needed()
+    for sizes in [(1, 0.8, 0.25, 1), (0, 0.7, 0.05, 0)]:
+        box = slider.bounding_box()
+        y = box["y"] + box["height"] / 2
+        page.mouse.move(box["x"] + box["width"] / 2, y)
+        page.mouse.down()
+        for fraction in sizes:
+            page.mouse.move(box["x"] + 1 + (box["width"] - 2) * fraction, y, steps=6)
+            assert abs(slider.bounding_box()["y"] - box["y"]) < 1
+        page.mouse.up()
+        expect(slider).to_have_value("100" if sizes[-1] else "20")
+    evidence.append(
+        "Grid slider stayed anchored through increases, decreases and reversals."
+    )
     # One large block can consume the full area without reaching the count cap.
     large = env | {"obstacles": [dict(id="area", x=0, y=0, w=10, h=6)]}
     load(large)
@@ -73,6 +105,8 @@ def check(page, folder):
     expect(stat("Additional obstacles allowed")).to_have_text("0")
     expect(stat("Available monitoring points")).to_have_text("85")
     assert button("Add (O)").is_disabled()
+    page.locator("canvas").scroll_into_view_if_needed()
+    page.mouse.move(*grid(15, 15))
     page.keyboard.press("o")
     expect(page.get_by_text("No additional obstacle fits", exact=False)).to_be_visible()
     page.locator("canvas").scroll_into_view_if_needed()
@@ -106,6 +140,7 @@ def check(page, folder):
     page.mouse.click(*grid(0.5, 0.5))
     page.mouse.click(*grid(12.5, 12.5))
     page.keyboard.press("r")
+    cursors(12, 12, 1, 1)
     drag((13, 13), (15, 15))
     bigger = snapshot()
     assert bigger == env | {"base_margin": 2}
@@ -134,17 +169,28 @@ def check(page, folder):
     expect(button("Delete")).to_be_disabled()
     page.mouse.click(*grid(6.5, 2.5))
     page.keyboard.press("r")
-    expect(page.get_by_text("Resize mode · drag a corner")).to_be_visible()
+    expect(page.get_by_text("Resize mode · drag an edge or corner")).to_be_visible()
+    cursors(6, 2, 2, 2)
     drag((6, 2), (-3, -3))
     resized = snapshot()["obstacles"][0]
     assert (resized["x"], resized["y"], resized["w"], resized["h"]) == (0, 0, 8, 4)
-    button("Delete").click()
+    page.keyboard.press("Delete")
+    expect(stat("Obstacles")).to_have_text("1")
+    page.keyboard.press("Control+z")
+    expect(stat("Obstacles")).to_have_text("2")
+    page.keyboard.press("Control+y")
+    for cell in ((8.5, 2.5), (12.5, 12.5), (-1, 1)):
+        page.mouse.move(*grid(*cell))
+        page.keyboard.press("o")
+        expect(stat("Obstacles")).to_have_text("1")
+    page.mouse.move(*grid(14.5, 7.5))
     page.keyboard.press("o")
     expect(page.get_by_text("Obstacle added.")).to_be_visible()
-    assert len(snapshot()["obstacles"]) == 2
+    added = snapshot()["obstacles"][-1]
+    assert (added["x"], added["y"]) == (14, 7)
     page.get_by_label("Sensing radius", exact=True).focus()
     page.keyboard.press("o")
-    assert len(snapshot()["obstacles"]) == 2
+    expect(stat("Obstacles")).to_have_text("2")
     evidence.append(
         "Manual editor: click-drag from first selection, swept collision, fixed neighbor, undo, redo, empty drag, R handles, resize to boundary, Delete, O and typing guard."
     )
@@ -196,12 +242,24 @@ def check(page, folder):
         page.get_by_text("Obstacles generated with seed 42.", exact=False)
     ).to_be_visible()
     assert snapshot() == barrier
-    page.locator("#size").focus()
+    size_control = page.locator("#size")
+    size_control.scroll_into_view_if_needed()
+    pos = size_control.bounding_box()
+    page.mouse.move(pos["x"] + pos["width"] - 3, pos["y"] + pos["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(pos["x"] + 2, pos["y"] + pos["height"] / 2, steps=18)
+    page.mouse.up()
+    assert abs(size_control.bounding_box()["y"] - pos["y"]) < 1
+    size_control.focus()
     page.keyboard.press("Home")
     assert snapshot() == barrier
     evidence.append(
         "At the 66-block cap, three more Generate clicks produced different, overlap-free maps. Re-entering seed 42 reproduced the first map. An invalid grid shrink preserved it."
     )
+    button("Run comparison").click()
+    button("Cancel").click()
+    expect(page.get_by_text("Run cancelled.", exact=False)).to_be_visible()
+    expect(button("Validate Solution")).to_be_disabled()
     load(env)
     for algorithm in ["GA", "MA"]:
         button(algorithm).click()
@@ -251,6 +309,96 @@ def check(page, folder):
     expect(button("Download Comparison")).to_be_disabled()
     evidence.append(
         "Three real browser downloads matched server files. Moving the station invalidated validation and export."
+    )
+    button("Environment").click()
+    load(env)
+    button("Manual monitoring points").click()
+    expect(button("Run comparison")).to_be_disabled()
+    expect(page.get_by_label("Site spacing", exact=True)).to_be_disabled()
+    button("Add points").click()
+    canvas = page.locator("canvas")
+    canvas.scroll_into_view_if_needed()
+    for cell in ((2.5, 2.5), (3.5, 9.5), (3.5, 9.5), (17.5, 7.5)):
+        page.mouse.click(*grid(*cell))
+    expect(stat("Required monitoring points")).to_have_text("2")
+    page.keyboard.press("Escape")
+    drag((3.5, 9.5), (5.5, 11.5))
+    saved = snapshot()
+    assert saved["manual_points"] == [[5, 11], [17, 7]]
+    page.keyboard.press("Delete")
+    expect(stat("Required monitoring points")).to_have_text("1")
+    page.keyboard.press("Control+z")
+    assert snapshot() == saved
+    button("Automatic monitoring points").click()
+    expect(stat("Available monitoring points")).to_have_text("98")
+    button("Manual monitoring points").click()
+    assert snapshot() == saved
+    load(clear)
+    load(saved)
+    button("Manual").click()
+    canvas.scroll_into_view_if_needed()
+    drag((2.5, 2.5), (5.5, 11.5))
+    assert snapshot()["manual_points"] == saved["manual_points"]
+    load(saved)
+    submitted = []
+
+    def track(req):
+        if req.url.endswith("/api/jobs") and req.method == "POST":
+            submitted.append(req.url)
+
+    page.on("request", track)
+    with page.expect_response(
+        lambda r: r.url.endswith("/api/jobs") and r.request.method == "POST"
+    ):
+        button("Run comparison").evaluate("(b) => { b.click(); b.click(); }")
+    expect(button("Validate Solution")).to_be_enabled(timeout=20000)
+    button("Validate Solution").click()
+    expect(page.get_by_text("MA · PASS", exact=True)).to_be_visible()
+    expect(page.get_by_text("GA · PASS", exact=True)).to_be_visible()
+    assert len(submitted) == 1
+    page.remove_listener("request", track)
+    canvas.scroll_into_view_if_needed()
+
+    def canvas_state():
+        return canvas.evaluate("""c => [c.width,c.height,c.toDataURL(),
+            ...['canvas','.map-foot span:nth-child(2)'].flatMap(s=>{
+             const r=document.querySelector(s).getBoundingClientRect();return [r.x,r.y,r.width,r.height]})]""")
+
+    start = canvas_state()
+    for x, y in [(1, 1), (2, 2), (12, 12), (17, 7), (0, 19), (19, 0), (-1, 0)] * 3:
+        page.mouse.move(*grid(x, y))
+    assert canvas_state() == start
+    button("Results").click()
+    expect(page.get_by_role("cell", name="manual", exact=True)).to_have_count(2)
+    expect(page.get_by_role("cell", name="2 / 2", exact=True)).to_have_count(2)
+    button("Environment").click()
+    button("Automatic monitoring points").click()
+    expect(button("Validate Solution")).to_be_disabled()
+    evidence.append(
+        "Manual targets survived edits, undo, mode switches and JSON reload. Both methods covered 2/2 targets. Hover preserved canvas pixels and status position."
+    )
+
+    # Simulate a worker failure in the browser transport; the real worker states
+    # and exceptions are tested separately by the API suite.
+    def fail_status(route):
+        route.fulfill(
+            json={"state": "failed", "error": "C:/Users/private/Temp/pending"}
+        )
+
+    page.route("**/api/jobs/*", fail_status)
+    button("Run comparison").click()
+    expect(page.get_by_text("The optimization failed.", exact=False)).to_be_visible()
+    expect(page.get_by_text("C:/Users/private", exact=False)).to_have_count(0)
+    expect(button("Validate Solution")).to_be_disabled()
+    button("Results").click()
+    expect(button("Download Comparison")).to_be_disabled()
+    page.unroute("**/api/jobs/*", fail_status)
+    page.route("**/api/health", lambda route: route.fulfill(json={"status": "ready"}))
+    page.reload()
+    expect(page.get_by_text("A different API is running.", exact=False)).to_be_visible()
+    expect(button("Run comparison")).to_be_disabled()
+    evidence.append(
+        "An injected job failure cleared results and hid private paths. An incompatible API could not start a run."
     )
     assert not errors, errors
     evidence.append(

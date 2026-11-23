@@ -1,9 +1,12 @@
 [
+  "Grid slider stayed anchored through increases, decreases and reversals.",
   "Live lattice counts and real addition capacity changed on resize, undo and redo.",
   "Station offset drag, swept collision, R resize around fixed center, footprint collision, mandatory station, undo and redo.",
   "Manual editor: click-drag from first selection, swept collision, fixed neighbor, undo, redo, empty drag, R handles, resize to boundary, Delete, O and typing guard.",
   "At the 66-block cap, three more Generate clicks produced different, overlap-free maps. Re-entering seed 42 reproduced the first map. An invalid grid shrink preserved it.",
   "GA, MA and paired comparison completed. Both results passed independent validation. Algorithm switching and layer toggle worked.",
   "Three real browser downloads matched server files. Moving the station invalidated validation and export.",
+  "Manual targets survived edits, undo, mode switches and JSON reload. Both methods covered 2/2 targets. Hover preserved canvas pixels and status position.",
+  "An injected job failure cleared results and hid private paths. An incompatible API could not start a run.",
   "Two-page navigation, visible settings, and mode-specific Local fraction checked. No uncaught page errors."
 ]

@@ -80,5 +80,7 @@
       "w": 1,
       "h": 4
     }
-  ]
+  ],
+  "monitoring_mode": "automatic",
+  "manual_points": []
 }

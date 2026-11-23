@@ -794,3 +794,37 @@ footer svg {
 .num-field input {
   margin-top: auto;
 }
+
+.notice {
+  position: fixed;
+  z-index: 20;
+  right: 16px;
+  bottom: 16px;
+  max-width: min(440px, calc(100vw - 32px));
+  margin: 0;
+  box-shadow: 0 4px 18px #172e2124;
+}
+.map-foot {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  min-height: 32px;
+  font-variant-numeric: tabular-nums;
+}
+.map-foot span:last-child {
+  justify-self: end;
+}
+.map-foot output {
+  min-width: 5ch;
+  text-align: right;
+}
+html {
+  scrollbar-gutter: stable;
+}
+
+.symbol.target {
+  background: #17a8ba;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px #4788b3;
+}

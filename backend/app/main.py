@@ -1,3 +1,5 @@
+import logging
+import os
 import multiprocessing
 from concurrent.futures import Future, ProcessPoolExecutor
 from contextlib import asynccontextmanager
@@ -24,6 +26,7 @@ from .exports import export
 
 
 class Run(Model):
+    protocol: Literal[2] = 2
     environment: Environment
     mode: Literal["GA", "MA", "Comparison", "Benchmark"]
     settings: Settings = Field(default_factory=Settings)
@@ -44,7 +47,35 @@ class Job:
     state: DictProxy
 
 
-def worker(request, state):
+PROTOCOL = 2
+log = logging.getLogger("uvicorn.error")
+RUN_ERROR = (
+    "The optimization could not be completed. Check the API console with the run ID."
+)
+
+
+def worker(key, request, state):
+    try:
+        return run_search(request, state)
+    except InterruptedError:
+        if not state.get("cancelled"):
+            log.exception(
+                "Interrupted job %s mode=%s pid=%s", key, request.mode, os.getpid()
+            )
+        raise
+    except Exception as error:
+        log.exception(
+            "Failed job %s state=running mode=%s worker=%s pid=%s winerror=%s",
+            key,
+            request.mode,
+            multiprocessing.current_process().name,
+            os.getpid(),
+            getattr(error, "winerror", None),
+        )
+        raise
+
+
+def run_search(request, state):
     def report(detail):
         if state.get("cancelled"):
             raise InterruptedError("Cancelled")
@@ -109,6 +140,8 @@ lock = Lock()
 def health():
     return dict(
         status="ready",
+        protocol=PROTOCOL,
+        instance=os.environ.get("AI_PROJECT_INSTANCE"),
         area_per_obstacle=AREA_PER_OBSTACLE,
         blocked_percent=MAX_BLOCKED_PERCENT,
         max_side=MAX_SIDE,
@@ -132,6 +165,14 @@ def generate_obstacles(body: Generation):
 
 @app.post("/api/jobs", status_code=202)
 def start(body: Run):
+    if (
+        body.mode != "Benchmark"
+        and body.environment.monitoring_mode == "manual"
+        and not body.environment.manual_points
+    ):
+        raise HTTPException(
+            422, "Add at least one required monitoring point before running."
+        )
     with lock:
         jobs = app.state.jobs
         if sum(not job.future.done() for job in jobs.values()) >= 4:
@@ -141,7 +182,7 @@ def start(body: Run):
             del jobs[oldest]
         key = uuid4().hex
         state = app.state.manager.dict()
-        future = app.state.pool.submit(worker, body, state)
+        future = app.state.pool.submit(worker, key, body, state)
         jobs[key] = Job(body, future, state)
     return dict(id=key)
 
@@ -155,23 +196,30 @@ def lookup(key):
 
 @app.get("/api/jobs/{key}")
 def status(key: str):
-    job = lookup(key)
+    with lock:
+        return job_status(key, lookup(key))
+
+
+def job_status(key, job):
     if job.state.get("cancelled"):
         return dict(state="cancelled")
     if job.future.done():
         try:
             return dict(state="complete", result=job.future.result())
-        except Exception as error:
-            return dict(state="failed", error=str(error))
+        except Exception:
+            return dict(state="failed", error=f"{RUN_ERROR} Run {key}.")
     return dict(state="running", progress=job.state.get("progress"))
 
 
 @app.delete("/api/jobs/{key}")
 def cancel(key: str):
-    job = lookup(key)
-    job.state["cancelled"] = True
-    job.future.cancel()
-    return dict(state="cancelled")
+    with lock:
+        job = lookup(key)
+        if job.future.done() or job.state.get("cancelled"):
+            return job_status(key, job)
+        job.state["cancelled"] = True
+        job.future.cancel()
+        return dict(state="cancelled")
 
 
 def current_results(key, environment):
