@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:studio": "tsc --noEmit && vite build --outDir ../studio --emptyOutDir",
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {

@@ -1,76 +1,64 @@
-"""Start Vite only after this launcher's API has answered on the expected port."""
+"""Serve the packaged studio and API together on a single local socket."""
 
-import os
+import asyncio
+import json
 from pathlib import Path
-import shutil
 import socket
-import subprocess
 import sys
-from threading import Thread
-from uuid import uuid4
+from urllib.request import ProxyHandler, build_opener
+import webbrowser
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def serve_api():
+def verify_site(url):
+    local = build_opener(ProxyHandler({}))
+    with local.open(url + "/api/health", timeout=10) as response:
+        if json.load(response).get("protocol") != 2:
+            raise RuntimeError("Unexpected API version")
+    with local.open(url + "/", timeout=10) as response:
+        if b'id="root"' not in response.read():
+            raise RuntimeError("Studio homepage is missing")
+
+
+async def main():
     import uvicorn
+    from fastapi.staticfiles import StaticFiles
 
     sys.path.insert(0, str(ROOT))
-    listener = socket.socket()
-    listener.bind(("127.0.0.1", 0))
-    port = listener.getsockname()[1]
-    ready_pipe = sys.stdout
-    sys.stdout = sys.stderr
+    from backend.app.main import app
 
-    class StudioServer(uvicorn.Server):
-        async def startup(self, sockets=None):
-            await super().startup(sockets=sockets)
-            if self.started:
-                print(port, file=ready_pipe, flush=True)
-
-    server = StudioServer(uvicorn.Config("backend.app.main:app", port=port))
-
-    def on_launcher_exit():
-        sys.stdin.buffer.read(1)
-        server.should_exit = True
-
-    Thread(target=on_launcher_exit, daemon=True).start()
-    with listener:
-        server.run(sockets=[listener])
-
-
-def main():
-    instance = uuid4().hex
-    api = subprocess.Popen(
-        [sys.executable, str(Path(__file__).resolve()), "--api"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        start_new_session=os.name != "nt",
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-        cwd=ROOT,
-        env=os.environ | {"AI_PROJECT_INSTANCE": instance},
-    )
-    try:
-        line = api.stdout.readline().strip()
-        if not line.isdigit():
-            print("API startup failed. See the server error above.", file=sys.stderr)
-            return 1
-        origin = "http://127.0.0.1:" + line.decode("ascii")
-        print("The API is ready. Open the Local URL printed by Vite.", flush=True)
-        return subprocess.call(
-            [shutil.which("npm.cmd" if os.name == "nt" else "npm"), "run", "dev", "--", "--open"],
-            cwd=ROOT / "frontend",
-            env=os.environ | {"AI_PROJECT_API_ORIGIN": origin},
-        )
-    except KeyboardInterrupt:
-        return 0
-    finally:
-        api.stdin.close()
-        api.wait()
+    site = ROOT / "studio"
+    if not (site / "index.html").is_file():
+        raise RuntimeError("Missing studio/index.html. Extract the entire project ZIP.")
+    app.mount("/", StaticFiles(directory=site, html=True))
+    with socket.socket() as listener:
+        if sys.platform == "win32":
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        try:
+            listener.bind(("127.0.0.1", 5173))
+        except OSError:
+            listener.bind(("127.0.0.1", 0))
+        url = f"http://127.0.0.1:{listener.getsockname()[1]}"
+        server = uvicorn.Server(uvicorn.Config(app, access_log=False))
+        task = asyncio.create_task(server.serve(sockets=[listener]))
+        try:
+            while not server.started:
+                if task.done():
+                    await task
+                    raise RuntimeError("The local server stopped during startup.")
+                await asyncio.sleep(0.05)
+            await asyncio.to_thread(verify_site, url)
+            print(f"Website ready: {url}\nKeep this window open. Press Ctrl+C to stop.", flush=True)
+            await asyncio.to_thread(webbrowser.open, url)
+            await task
+        finally:
+            server.should_exit = True
+            await task
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--api"]:
-        serve_api()
-    else:
-        sys.exit(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass

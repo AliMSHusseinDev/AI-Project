@@ -279,7 +279,7 @@ def main():
             h("System architecture"),
             architecture(),
             p(
-                "The Windows launcher verifies the new API instance before starting Vite. The browser checks the protocol and polls FastAPI for each job. The worker publishes progress through a multiprocessing manager, which also carries cancellation requests. Progress needs no file replacement. Worker errors log a traceback with the job ID. Comparison uses identical inputs. The validator rebuilds the answer from the returned positions."
+                "One local server hosts the packaged UI and the API. The launcher checks both before opening the browser. The browser checks the protocol and polls FastAPI for each job. The worker publishes progress through a multiprocessing manager, which also carries cancellation requests. Progress needs no file replacement. Worker errors log a traceback with the job ID. Comparison uses identical inputs. The validator rebuilds the answer from the returned positions."
             ),
             table(
                 [
@@ -290,7 +290,7 @@ def main():
                     ],
                     [
                         "frontend/src",
-                        "React and TypeScript manage controls. Canvas draws a scaled terrain. Recharts draws convergence. Vite serves the app.",
+                        "React and TypeScript manage controls. Canvas draws a scaled terrain. Recharts draws convergence. Vite builds the packaged site.",
                     ],
                     [
                         "backend/tests and scripts",
@@ -309,7 +309,7 @@ def main():
             ),
             h("Start locally"),
             p(
-                "Install Python 3.12 and Node.js 22 or newer. Follow the Windows commands in README.md or open run.bat. Start FastAPI on port 8000 and Vite on port 5173. The browser sends requests through Vite. Development checks were executed on Linux with Chromium."
+                "Install Python 3.12, extract the complete project, and open run.bat. Keep its console open. It prints the local address and installs Python dependencies on first use. Node.js is used for frontend development. The packaged site was tested on Linux with Chromium."
             ),
         ],
     )
