@@ -278,6 +278,7 @@ h3 {
   appearance: none;
 }
 input[type="range"] {
+  touch-action: none;
   width: 100%;
   margin: 14px 0 2px;
   accent-color: var(--teal);

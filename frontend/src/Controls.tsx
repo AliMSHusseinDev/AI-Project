@@ -93,7 +93,13 @@ export function Controls(p: Props) {
   const { env, limits } = p,
     max = Math.floor(env.size ** 2 / limits.area_per_obstacle);
   const [draftSize, setDraftSize] = useState<number | null>(null);
-  const sliding = useRef(false);
+  const sliding = useRef<number | null>(null);
+  const displayedSize = draftSize ?? env.size;
+  function pointerSize(event: React.PointerEvent<HTMLInputElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (event.clientX - box.left - 8) / (box.width - 16)));
+    return 20 + Math.round(80 * fraction);
+  }
   const resize = (size: number) =>
     p.change({
       ...env,
@@ -121,9 +127,9 @@ export function Controls(p: Props) {
           <div className="readout">
             <input
               aria-label="Grid size value"
-              key={env.size}
+              key={displayedSize}
               type="number"
-              defaultValue={env.size}
+              defaultValue={displayedSize}
               min="20"
               max="100"
               onBlur={(e) => {
@@ -135,7 +141,7 @@ export function Controls(p: Props) {
                 if (e.key === "Enter") e.currentTarget.blur();
               }}
             />{" "}
-            × {env.size}
+            × {displayedSize}
           </div>
         </div>
         <input
@@ -150,21 +156,27 @@ export function Controls(p: Props) {
               : `Requested ${draftSize}, current grid ${env.size}`
           }
           onPointerDown={(e) => {
-            sliding.current = true;
+            if (!e.isPrimary || e.button !== 0) return;
+            e.preventDefault();
+            e.currentTarget.focus({preventScroll:true});
+            sliding.current = e.pointerId;
             e.currentTarget.setPointerCapture(e.pointerId);
+            setDraftSize(pointerSize(e));
           }}
-          onChange={(e) =>
-            sliding.current
-              ? setDraftSize(+e.target.value)
-              : resize(+e.target.value)
-          }
+          onPointerMove={(e) => {
+            if (sliding.current === e.pointerId) setDraftSize(pointerSize(e));
+          }}
+          onChange={(e) => {
+            if (sliding.current === null) resize(+e.target.value);
+          }}
           onPointerUp={(e) => {
-            if (sliding.current) resize(+e.currentTarget.value);
-            sliding.current = false;
+            if (sliding.current !== e.pointerId) return;
+            sliding.current = null;
+            resize(pointerSize(e));
             setDraftSize(null);
           }}
           onLostPointerCapture={() => {
-            sliding.current = false;
+            sliding.current = null;
             setDraftSize(null);
           }}
         />
